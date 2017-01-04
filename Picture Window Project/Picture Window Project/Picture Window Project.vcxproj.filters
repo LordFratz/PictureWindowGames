@@ -41,16 +41,31 @@
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
       <Filter>Assets</Filter>
     </Image>
+    <Filter Include="Backend Classes">
+      <UniqueIdentifier>{48a762a3-f781-4c49-be64-c063c8b85837}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Picture_Window_ProjectMain.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Backend Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="DumbPlaneRenderer.cpp">
+      <Filter>Backend Classes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Picture_Window_ProjectMain.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Renderer.h">
+      <Filter>Backend Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="DumbPlaneRenderer.h">
+      <Filter>Backend Classes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">
@@ -62,5 +77,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Picture Window Project_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="BasicVertexShader.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
+    <FxCompile Include="BasicPixelShader.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

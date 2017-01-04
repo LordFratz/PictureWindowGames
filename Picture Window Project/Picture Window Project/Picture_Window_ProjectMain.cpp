@@ -15,6 +15,7 @@ Picture_Window_ProjectMain::Picture_Window_ProjectMain(const std::shared_ptr<DX:
 	m_deviceResources->RegisterDeviceNotify(this);
 
 	// TODO: Replace this with your app's content initialization.
+	temp = std::unique_ptr<DumbPlaneRenderer>(new DumbPlaneRenderer(m_deviceResources));
 
 	// TODO: Change the timer settings if you want something other than the default variable timestep mode.
 	// e.g. for 60 FPS fixed timestep update logic, call:
@@ -34,6 +35,7 @@ Picture_Window_ProjectMain::~Picture_Window_ProjectMain()
 void Picture_Window_ProjectMain::CreateWindowSizeDependentResources()
 {
 	// TODO: Replace this with the size-dependent initialization of your app's content.
+	temp->CreateWindowSizeDependentResources();
 }
 
 // Updates the application state once per frame.
@@ -72,17 +74,19 @@ bool Picture_Window_ProjectMain::Render()
 
 	// Render the scene objects.
 	// TODO: Replace this with your app's content rendering functions.
-
+	temp->Render();
 	return true;
 }
 
 // Notifies renderers that device resources need to be released.
 void Picture_Window_ProjectMain::OnDeviceLost()
 {
+	temp->ReleaseDeviceDependentResources();
 }
 
 // Notifies renderers that device resources may now be recreated.
 void Picture_Window_ProjectMain::OnDeviceRestored()
 {
+	temp->CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 }

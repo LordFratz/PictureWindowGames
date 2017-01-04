@@ -2,6 +2,7 @@
 
 #include "Common\StepTimer.h"
 #include "Common\DeviceResources.h"
+#include "DumbPlaneRenderer.h"
 
 // Renders Direct2D and 3D content on the screen.
 namespace Picture_Window_Project
@@ -24,7 +25,7 @@ namespace Picture_Window_Project
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
 
 		// TODO: Replace with your own content renderers.
-
+		std::unique_ptr<DumbPlaneRenderer> temp;
 		// Rendering loop timer.
 		DX::StepTimer m_timer;
 	};
