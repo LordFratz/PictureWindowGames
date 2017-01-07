@@ -10,25 +10,39 @@ struct sphere
 	float radius;
 };
 
+//<temp>
+class KdTree
+{
+	//Function that takes in Camera and returns vector of RenderShapes
+	//Fast enough for all dynamic RenderShapes? or just static
+	//Better idea?
+};
+
 class Camera
 {
 public:
-
+	//RenderSet* BuildRenderSet(KdTree* Scene)
 };
+//</temp>
+typedef void (*CleanupFunc)();
 
-typedef void(*CleanupFunc)(void);
-typedef void(*RenderFunc)(RenderNode &rNode);
+//typedef void (*RenderFunc)(RenderNode &rNode);
 
 class RenderNode
 {
-	RenderFunc func;
-public:
+	void(*func)(RenderNode &rNode);
+protected:
 	RenderNode* next;
+public:
+
+	inline void renderProcess() { func(*this); };
+	inline RenderNode* GetNext() { return next; };;
+
 	RenderNode()
 	{
 		next = nullptr;
 	}
-	RenderNode(RenderFunc Func)
+	RenderNode(void (*Func)(RenderNode &rNode))
 	{
 		next = nullptr;
 		func = Func;
@@ -37,8 +51,6 @@ public:
 	{
 		delete next;
 	}
-	inline void renderProcess() { func(*this) };
-	inline RenderNode* GetNext() { return next; };
 	inline void AddChild(RenderNode* child)
 	{
 		if(next == nullptr)
@@ -100,13 +112,13 @@ public:
 
 namespace Renderer
 {
-	void Render(RenderSet set)
+	void Render(RenderSet* set)
 	{
-		RenderNode* curr = set.GetHead();
+		RenderNode* curr = set->GetHead();
 		while (curr != nullptr)
 		{
 			curr->renderProcess();
-			curr = curr->GetNext;
+			curr = curr->GetNext();
 		}
 	}
 }
