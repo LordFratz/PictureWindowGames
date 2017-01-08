@@ -24,7 +24,7 @@ void DeviceResources::initialize(int sWidth, int sHeight, HWND window)
 	scd.OutputWindow = window;
 	scd.SampleDesc.Count = 1;
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, NULL, NULL, D3D11_SDK_VERSION, &scd, m_swapChain.GetAddressOf(), m_d3dDevice.GetAddressOf(), NULL, m_d3dContext.GetAddressOf());
+	D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, NULL, NULL, D3D11_SDK_VERSION, &scd, m_swapChain.GetAddressOf(), m_d3dDevice.GetAddressOf(), NULL, m_d3dContext.GetAddressOf());
 	ID3D11Texture2D *pBackBuffer;
 	m_swapChain.Get()->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
 	m_d3dDevice.Get()->CreateRenderTargetView(pBackBuffer, NULL, m_d3dRenderTargetView.GetAddressOf());

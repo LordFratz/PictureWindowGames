@@ -27,9 +27,32 @@ using namespace std;
 using namespace DirectX;
 #include "Trivial_VS.csh"
 #include "Trivial_PS.csh"
+#include "BasicVertexShader.csh"
+#include "BasicPixelShader.csh"
 #include "DeviceResources.h"
+#include "Renderer.h"
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
+
+struct ViewProj
+{
+	XMFLOAT4X4 view;
+	XMFLOAT4X4 projection;;
+};
+
+struct VertexPositionColor
+{
+	XMFLOAT3 pos;
+	XMFLOAT3 color;
+};
+
+class Camera
+{
+public:
+	ViewProj cameraData;
+};
+
+static Camera* CurrCamera;
 
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
@@ -41,11 +64,10 @@ class DEMO_APP
 	WNDPROC							appWndProc;
 	HWND							window;
 	shared_ptr<DeviceResources> devResources;
-	//ID3D11Device *Device;
-	//ID3D11DeviceContext *dContext;
-	//ID3D11RenderTargetView *targetView;
-	//IDXGISwapChain *swapChain;
-	//CD3D11_VIEWPORT viewport;
+	RenderContext* planeContext = nullptr;
+	RenderShape* planeShape = nullptr;
+	RenderMesh* planeMesh = nullptr;
+	RenderSet Set;
 	ID3D11Buffer *VertBuffer;
 	const unsigned int vertCount = 361;
 	ID3D11Buffer *ConstBuffer;
@@ -76,6 +98,38 @@ public:
 	bool ShutDown();
 };
 
+namespace
+{
+	void PlaneContext(RenderNode &rNode)
+	{
+		auto Node = &(RenderContext&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		context->IASetInputLayout(Node->m_inputLayout.Get());
+		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
+		context->PSSetShader(Node->m_pixelShader.Get(), nullptr, 0);
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
+		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData,0, 0);
+		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+	}
+
+	void PlaneShape(RenderNode &rNode)
+	{
+		auto Node = &(RenderShape&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, &Node->WorldMat, 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(VertexPositionColor);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+}
+
 //************************************************************
 //************ CREATION OF OBJECTS & RESOURCES ***************
 //************************************************************
@@ -84,6 +138,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 {
 	// ****************** BEGIN WARNING ***********************//
 	// WINDOWS CODE, I DON'T TEACH THIS YOU MUST KNOW IT ALREADY!
+#if 1
 	application = hinst;
 	appWndProc = proc;
 
@@ -106,12 +161,99 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 							NULL, NULL,	application, this );
 
     ShowWindow( window, SW_SHOW );
+#endif
 	//********************* END WARNING ************************//
+
 	devResources = make_shared<DeviceResources>();
 	devResources->initialize(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, window);
-	DXGI_SWAP_CHAIN_DESC scd;
+
 	auto Device = devResources->GetD3DDevice();
 	auto dContext = devResources->GetD3DDeviceContext();
+
+	planeContext = new RenderContext(devResources, PlaneContext, false);
+	planeMesh = new RenderMesh();
+	XMFLOAT4X4 mat;
+	XMStoreFloat4x4(&mat, XMMatrixIdentity());
+	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), PlaneShape);
+
+	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
+	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), planeContext->m_inputLayout.GetAddressOf());
+	CD3D11_BUFFER_DESC constBuffDesc(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer->GetAddressOf());
+	planeContext->ContextData.push_back(Buffer);
+
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer2 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer2->GetAddressOf());
+	planeMesh->MeshData.push_back(Buffer2);
+
+	static const VertexPositionColor cubeVertices[] =
+	{
+		{ XMFLOAT3(-2.5f, -0.5f, -2.5f), XMFLOAT3(0.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(-2.5f, -0.5f,  2.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(2.5f, -0.5f, -2.5f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(2.5f, -0.5f,  2.5f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
+	};
+
+	D3D11_SUBRESOURCE_DATA BufferData = { 0 };
+	BufferData.pSysMem = cubeVertices;
+	BufferData.SysMemPitch = 0;
+	BufferData.SysMemSlicePitch = 0;
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeVertices), D3D11_BIND_VERTEX_BUFFER);
+	auto Buffer3 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer3->GetAddressOf());
+	planeMesh->MeshData.push_back(Buffer3);
+
+	static const unsigned short cubeIndices[] =
+	{
+		0,2,1, // -x
+		1,2,3,
+	};
+
+	planeMesh->m_indexCount = ARRAYSIZE(cubeIndices);
+	BufferData = { 0 };
+	BufferData.pSysMem = cubeIndices;
+	BufferData.SysMemPitch = 0;
+	BufferData.SysMemSlicePitch = 0;
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
+	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
+
+	planeContext->AddChild(planeShape);
+
+	Set = RenderSet();
+	Set.SetHead(planeContext);
+
+	CurrCamera = new Camera;
+	static const XMVECTORF32 eye = { 0.0f, 0.0f, -1.5f, 0.0f };
+	static const XMVECTORF32 at = { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+	XMStoreFloat4x4(&CurrCamera->cameraData.view, XMMatrixTranspose(XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up))));
+
+	float aspectRatio = BACKBUFFER_WIDTH / BACKBUFFER_HEIGHT;
+	float fovAngleY = 60.0f * XM_PI / 180.0f;
+
+	if(aspectRatio < 1.0f)
+	{
+		fovAngleY *= 2.0f;
+	}
+
+	XMMATRIX perspectiveMatrix = XMMatrixPerspectiveFovRH(
+		fovAngleY,
+		aspectRatio,
+		0.01f,
+		100.0f
+	);
+
+	XMStoreFloat4x4(&CurrCamera->cameraData.projection, XMMatrixTranspose(perspectiveMatrix));
+
+#if 0
 	SIMPLE_VERTEX circle[361];
 	for (unsigned int i = 0; i < vertCount - 1; i++)
 	{
@@ -188,7 +330,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 			}
 		}
 	}
-	// TODO: PART 5 STEP 3
+
 	D3D11_SUBRESOURCE_DATA data3;
 	ZeroMemory(&data3, sizeof(D3D11_SUBRESOURCE_DATA));
 	data3.pSysMem = background;
@@ -236,6 +378,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	offsetVel.x = 1.0f;
 	offsetVel.y = .5f;;
 	timer.Restart();
+#endif
 }
 
 //************************************************************
@@ -244,10 +387,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 bool DEMO_APP::Run()
 {
+	auto swapChain = devResources->GetSwapChain();
 	auto dContext = devResources->GetD3DDeviceContext();
 	auto targetView = devResources->GetBackBufferRenderTargetView();
 	auto viewport = devResources->GetScreenViewport();
-	auto swapChain = devResources->GetSwapChain();
+
+	dContext->OMSetRenderTargets(1, &targetView, NULL);
+	dContext->RSSetViewports(1, &viewport);
+	FLOAT color[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	dContext->ClearRenderTargetView(targetView, color);
+
+#if 0
 	timer.Signal();
 	float delta = timer.Delta();
 	toShader.constantOffset.x += offsetVel.x * delta;
@@ -268,10 +418,6 @@ bool DEMO_APP::Run()
 	{
 		offsetVel.y = .5f;
 	}
-	dContext->OMSetRenderTargets(1, &targetView, NULL);
-	dContext->RSSetViewports(1, &viewport);
-	FLOAT color[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	dContext->ClearRenderTargetView(targetView, color);
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -299,7 +445,11 @@ bool DEMO_APP::Run()
 	dContext->IASetInputLayout(pLayout);
 	dContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP);
 	dContext->Draw(vertCount, 0);
+#endif
+	Renderer::Render(&Set);
+
 	swapChain->Present(0, 0);
+
 	return true;
 }
 
@@ -309,7 +459,7 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
-
+	delete planeContext;
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
 }
