@@ -1,13 +1,24 @@
 #pragma once
-#include "pch.h"
 #include <DirectXMath.h>
 #include <vector>
-#include "Common\DeviceResources.h"
+#include "DeviceResources.h"
+#include <d3d11.h>
+#include <wrl/client.h>
+#include <memory>
 using namespace DirectX;
 
 struct sphere
 {
 	float radius;
+
+	sphere()
+	{
+		radius = 0;
+	}
+	sphere(float Radius)
+	{
+		radius = Radius;
+	}
 };
 
 //<temp>
@@ -18,7 +29,7 @@ class KdTree
 	//Better idea?
 };
 //</temp>
-typedef void (*CleanupFunc)();
+typedef void(*CleanupFunc)();
 
 //typedef void (*RenderFunc)(RenderNode &rNode);
 
@@ -30,9 +41,9 @@ protected:
 public:
 
 	inline void renderProcess() { func(*this); };
-	inline RenderNode* GetNext() { return next; };;
+	RenderNode* GetNext() const { return next; };;
 
-	RenderNode(void (*Func)(RenderNode &rNode))
+	RenderNode(void(*Func)(RenderNode &rNode))
 	{
 		next = nullptr;
 		func = Func;
@@ -41,9 +52,9 @@ public:
 	{
 		delete next;
 	}
-	inline void AddChild(RenderNode* child)
+	void AddChild(RenderNode* child)
 	{
-		if(next == nullptr)
+		if (next == nullptr)
 		{
 			next = child;
 		}
@@ -57,62 +68,82 @@ public:
 class RenderContext : public RenderNode
 {
 	bool isTransparent;
-	std::shared_ptr<DX::DeviceResources> m_deviceResources;
+public:
 
+	std::shared_ptr<DeviceResources> m_deviceResources;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
 	std::vector<void*> ContextData;
 
-public:
-	RenderContext(std::shared_ptr<DX::DeviceResources> deviceResources , void(*Func)(RenderNode &rNode)) : RenderNode(Func)
+	RenderContext(std::shared_ptr<DeviceResources> deviceResources, void(*Func)(RenderNode &rNode), bool IsTransparent) : RenderNode(Func)
 	{
+		next = nullptr;
+		isTransparent = IsTransparent;
 		m_deviceResources = deviceResources;
+	}
+	~RenderContext()
+	{
+		for(int i = 0; i < ContextData.size(); i++)
+		{
+			delete ContextData[i];
+		}
 	}
 };
 
 class RenderMesh
 {
-	//TODO: Develop Mesh Storage Here
-	Microsoft::WRL::ComPtr<ID3D11Buffer>		m_indexBuffer;
-	std::vector<void*> MeshData;
 public:
-	CleanupFunc func;
+	Microsoft::WRL::ComPtr<ID3D11Buffer>	m_indexBuffer;
+	unsigned int m_indexCount;
+	std::vector<void*> MeshData;;
+	~RenderMesh()
+	{
+		for(int i = 0; i < MeshData.size(); i++)
+		{
+			delete MeshData[i];
+		}
+	}
 };
 
 class RenderShape : public RenderNode
 {
+public:
+
+	std::shared_ptr<DeviceResources> m_deviceResources;
 	RenderMesh& Mesh;
 	RenderContext& Context;
 	XMFLOAT4X4 WorldMat;
 	sphere BoundingSphere;
-public:
-	RenderShape(RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode* rNode)) : Mesh(mesh), Context(context), RenderNode(Func)
+
+	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode)) : RenderNode(Func), Mesh(mesh), Context(context)
 	{
+		next = nullptr;
+		m_deviceResources = deviceResources;
 		WorldMat = worldMat;
 		BoundingSphere = boundingSphere;
 	}
 	~RenderShape()
 	{
-		Mesh.func();
 		delete next;
 	}
 };
 
 class RenderSet
 {
-	RenderNode* head;
+	RenderNode* head = nullptr;
 public:
 	~RenderSet()
 	{
 		delete head;
 	}
-	inline RenderNode* GetHead() { return head; };
+	RenderNode* GetHead() const { return head; }
+	void SetHead(RenderNode* Head) { head = Head; }
 };
 
 namespace Renderer
 {
-	void Render(RenderSet* set)
+	inline void Render(RenderSet* set)
 	{
 		RenderNode* curr = set->GetHead();
 		while (curr != nullptr)
