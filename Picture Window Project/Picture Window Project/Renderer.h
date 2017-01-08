@@ -17,12 +17,6 @@ class KdTree
 	//Fast enough for all dynamic RenderShapes? or just static
 	//Better idea?
 };
-
-class Camera
-{
-public:
-	//RenderSet* BuildRenderSet(KdTree* Scene)
-};
 //</temp>
 typedef void (*CleanupFunc)();
 
@@ -38,10 +32,6 @@ public:
 	inline void renderProcess() { func(*this); };
 	inline RenderNode* GetNext() { return next; };;
 
-	RenderNode()
-	{
-		next = nullptr;
-	}
 	RenderNode(void (*Func)(RenderNode &rNode))
 	{
 		next = nullptr;
@@ -73,6 +63,12 @@ class RenderContext : public RenderNode
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
 	std::vector<void*> ContextData;
+
+public:
+	RenderContext(std::shared_ptr<DX::DeviceResources> deviceResources , void(*Func)(RenderNode &rNode)) : RenderNode(Func)
+	{
+		m_deviceResources = deviceResources;
+	}
 };
 
 class RenderMesh
@@ -91,6 +87,11 @@ class RenderShape : public RenderNode
 	XMFLOAT4X4 WorldMat;
 	sphere BoundingSphere;
 public:
+	RenderShape(RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode* rNode)) : Mesh(mesh), Context(context), RenderNode(Func)
+	{
+		WorldMat = worldMat;
+		BoundingSphere = boundingSphere;
+	}
 	~RenderShape()
 	{
 		Mesh.func();
@@ -107,7 +108,6 @@ public:
 		delete head;
 	}
 	inline RenderNode* GetHead() { return head; };
-	static RenderSet* CreateSet(Camera& camera);
 };
 
 namespace Renderer
