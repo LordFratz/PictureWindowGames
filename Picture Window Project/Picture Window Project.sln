@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Picture Window Project", "Picture Window Project\Picture Window Project.vcxproj", "{BA62608D-7822-488C-AE89-F3E22CEB18BE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBXTest", "FBXTest\FBXTest.vcxproj", "{9A03362A-3959-476C-84D1-5035952D3B67}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -33,6 +35,16 @@ Global
 		{BA62608D-7822-488C-AE89-F3E22CEB18BE}.Release|x86.ActiveCfg = Release|Win32
 		{BA62608D-7822-488C-AE89-F3E22CEB18BE}.Release|x86.Build.0 = Release|Win32
 		{BA62608D-7822-488C-AE89-F3E22CEB18BE}.Release|x86.Deploy.0 = Release|Win32
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Debug|ARM.ActiveCfg = Debug|Win32
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Debug|x64.ActiveCfg = Debug|x64
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Debug|x64.Build.0 = Debug|x64
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Debug|x86.ActiveCfg = Debug|Win32
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Debug|x86.Build.0 = Debug|Win32
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Release|ARM.ActiveCfg = Release|Win32
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Release|x64.ActiveCfg = Release|x64
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Release|x64.Build.0 = Release|x64
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Release|x86.ActiveCfg = Release|Win32
+		{9A03362A-3959-476C-84D1-5035952D3B67}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
