@@ -446,6 +446,7 @@ bool DEMO_APP::Run()
 	dContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP);
 	dContext->Draw(vertCount, 0);
 #endif
+
 	Renderer::Render(&Set);
 
 	swapChain->Present(0, 0);

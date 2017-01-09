@@ -50,7 +50,6 @@ public:
 	}
 	~RenderNode()
 	{
-		delete next;
 	}
 	void AddChild(RenderNode* child)
 	{
@@ -84,7 +83,7 @@ public:
 	}
 	~RenderContext()
 	{
-		for(int i = 0; i < ContextData.size(); i++)
+		for(size_t i = 0; i < ContextData.size(); i++)
 		{
 			delete ContextData[i];
 		}
@@ -99,7 +98,7 @@ public:
 	std::vector<void*> MeshData;;
 	~RenderMesh()
 	{
-		for(int i = 0; i < MeshData.size(); i++)
+		for(size_t i = 0; i < MeshData.size(); i++)
 		{
 			delete MeshData[i];
 		}
