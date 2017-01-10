@@ -79,7 +79,6 @@ public:
 		viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
 		XMStoreFloat4x4(&cameraData.view, XMMatrixTranspose(viewMatrix));
 		XMStoreFloat4(&cameraData.cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
-		float aspectRatio = sWidth / sHeight;
 		float aspectRatio = float(sWidth) / float(sHeight);
 
 		float fovAngleY = 60.0f * XM_PI / 180.0f;
@@ -338,7 +337,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), planeContext->m_inputLayout.GetAddressOf());
 #endif
-	
+
 
 
 	CD3D11_BUFFER_DESC constBuffDesc(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
@@ -399,22 +398,28 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	//TODO: WILL NEED TO BE REPLACED WHEN TREVOR FIXES THE THINGS!!!
-	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[FBX.Verts.size()];
-	int* IndexBuffer = new int[FBX.Indecies.size()];
-	for (size_t i = 0; i < FBX.Verts.size(); i++)
+	whatever::loadFile("../Resources/Box_Jump.fbx");
+	//float** BoneMatTest = whatever::GetBoneBindMat();
+	//int** BoneVertTest = whatever::GetBoneVertInds();
+	//float** BoneWeightTest = whatever::GetBoneWeights();
+	//int* BoneParentTest = whatever::GetParentInds();
+
+
+
+	int numVerts = 16;
+	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
+	int* IndexBuffer = whatever::GetInd();
+	float* UVs = whatever::GetUVs();
+	float* Norms = whatever::GetNormals();
+	float* Verts = whatever::GetVerts();
+	for (int i = 0; i < numVerts; i++)
 	{
 		VertexPositionUVWNorm Temp;
-		Temp.pos = XMFLOAT4(FBX.Verts[i].pos[0], FBX.Verts[i].pos[1], FBX.Verts[i].pos[2], FBX.Verts[i].pos[3]);
-		Temp.UVW = XMFLOAT4(FBX.UVs[i].pos[0], FBX.UVs[i].pos[1], FBX.UVs[i].pos[2], FBX.UVs[i].pos[3]);
-		Temp.Norm = XMFLOAT4(FBX.Normals[i].pos[0], FBX.Normals[i].pos[1], FBX.Normals[i].pos[2], FBX.Normals[i].pos[3]);
+		Temp.pos = XMFLOAT4(Verts[i*4], Verts[i*4+1], Verts[i*4+2], Verts[i*4+3]);
+		Temp.UVW = XMFLOAT4(UVs[i*2], UVs[i*2+1], 0, 0);
+		Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
 		VertexBuffer[i] = Temp;
 	}
-	for(size_t i = 0; i < FBX.Indecies.size(); i++)
-	{
-		IndexBuffer[i] = FBX.Indecies[i];
-	}
-	//END OF CODE THAT WILL NEED TO BE FIXED WHEN TREVOR FIXES THE THINGS!!!
 	ModelContext = new RenderContext(devResources, TexturedContext, false);
 	ModelMesh = new RenderMesh();
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), TexturedShape);
@@ -442,14 +447,14 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData,ModelShape->Mesh.m_indexBuffer.GetAddressOf());
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProjPos), D3D11_BIND_CONSTANT_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
 	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
 	ModelContext->ContextData.push_back(Buffer12);
 
 
-	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -457,7 +462,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
-	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc2), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), ModelContext->m_inputLayout.GetAddressOf());
+	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), ModelContext->m_inputLayout.GetAddressOf());
 
 
 
