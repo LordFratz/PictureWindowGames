@@ -36,7 +36,14 @@ using namespace DirectX;
 struct ViewProj
 {
 	XMFLOAT4X4 view;
-	XMFLOAT4X4 projection;;
+	XMFLOAT4X4 projection;
+};
+
+struct ViewProjPos
+{
+	XMFLOAT4X4 view;
+	XMFLOAT4X4 projection;
+	XMFLOAT4 pos;
 };
 
 struct VertexPositionColor
@@ -138,6 +145,11 @@ class DEMO_APP
 	RenderContext* planeContext = nullptr;
 	RenderShape* planeShape = nullptr;
 	RenderMesh* planeMesh = nullptr;
+
+	RenderContext* ModelContext = nullptr;
+	RenderShape* ModelShape = nullptr;
+	RenderMesh* ModelMesh = nullptr;
+
 	RenderSet Set;
 	ID3D11Buffer *VertBuffer;
 	const unsigned int vertCount = 361;
@@ -338,8 +350,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	//WILL NEED TO BE REPLACED WHEN TREVOR FIXES THINGS!!!
+	//TODO: WILL NEED TO BE REPLACED WHEN TREVOR FIXES THE THINGS!!!
 	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[FBX.Verts.size()];
+	int* IndexBuffer = new int[FBX.Indecies.size()];
 	for (size_t i = 0; i < FBX.Verts.size(); i++)
 	{
 		VertexPositionUVWNorm Temp;
@@ -348,11 +361,58 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.Norm = XMFLOAT4(FBX.Normals[i].pos[0], FBX.Normals[i].pos[1], FBX.Normals[i].pos[2], FBX.Normals[i].pos[3]);
 		VertexBuffer[i] = Temp;
 	}
+	for(size_t i = 0; i < FBX.Indecies.size(); i++)
+	{
+		IndexBuffer[i] = FBX.Indecies[i];
+	}
+	//END OF CODE THAT WILL NEED TO BE FIXED WHEN TREVOR FIXES THE THINGS!!!
+	ModelContext = new RenderContext(devResources, TexturedContext, false);
+	ModelMesh = new RenderMesh();
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), TexturedShape);
+
+	BufferData = { 0 };
+	BufferData.pSysMem = IndexBuffer;
+	BufferData.SysMemPitch = 0;
+	BufferData.SysMemSlicePitch = 0;
+
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer11 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer11->GetAddressOf());
+	ModelMesh->MeshData.push_back(Buffer11);
+
+	BufferData = { 0 };
+	BufferData.pSysMem = VertexBuffer;
+	BufferData.SysMemPitch = 0;
+	BufferData.SysMemSlicePitch = 0;
+
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_VERTEX_BUFFER);
+	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
+	ModelMesh->MeshData.push_back(Buffer10);
+
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_INDEX_BUFFER);
+	Device->CreateBuffer(&constBuffDesc, &BufferData,ModelShape->Mesh.m_indexBuffer.GetAddressOf());
+
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProjPos), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
+	ModelContext->ContextData.push_back(Buffer12);
 
 
+	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc2), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), ModelContext->m_inputLayout.GetAddressOf());
 
 	planeContext->AddChild(planeShape);
-
+	planeContext->AddChild(ModelContext);
+	planeContext->AddChild(ModelShape);
 	Set = RenderSet();
 	Set.SetHead(planeContext);
 
