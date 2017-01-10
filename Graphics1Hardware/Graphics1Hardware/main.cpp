@@ -366,7 +366,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer2->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer2);
 
-	static const VertexPositionUVWNorm cubeVertices[] =
+	static const VertexPositionUVWNorm planeVerts[] =
 	{
 		{ XMFLOAT4(-2.5f, -0.5f, -2.5f, 0.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
 		{ XMFLOAT4(-2.5f, -0.5f,  2.5f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
@@ -375,10 +375,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 
 	D3D11_SUBRESOURCE_DATA BufferData = { 0 };
-	BufferData.pSysMem = cubeVertices;
+	BufferData.pSysMem = planeVerts;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeVertices), D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(planeVerts), D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer3 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer3->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer3);
@@ -398,18 +398,18 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end light initializations
 
 
-	static const unsigned short cubeIndices[] =
+	static const unsigned short planeIndices[] =
 	{
 		0,2,1, // -x
 		1,2,3,
 	};
 
-	planeMesh->m_indexCount = ARRAYSIZE(cubeIndices);
+	planeMesh->m_indexCount = ARRAYSIZE(planeIndices);
 	BufferData = { 0 };
-	BufferData.pSysMem = cubeIndices;
+	BufferData.pSysMem = planeIndices;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(planeIndices), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
 #endif
