@@ -11,7 +11,7 @@
 
 namespace FBXExporter
 {
-	EXPORT class FBXExport
+ class EXPORT FBXExport
 	{
 	private:
 
@@ -42,11 +42,12 @@ namespace FBXExporter
 		std::vector<Vertex> UVs;
 		std::vector<int> Indecies;
 		std::vector<Bone> Skeleton;
-		FbxLongLong AnimLength;
-		std::vector<KeyFrame> Animation;
-		FbxTexture* Texture;
+		//FbxLongLong AnimLength;
+		//std::vector<KeyFrame> Animation;
+		//FbxTexture* Texture;
 
 		FBXExport() {};
+		~FBXExport();
 		/*static EXPORT*/ void FBXConvert(char* filename, char* OutputName);
 		void ExportFBX(FbxNode* NodeThing, int ParentIndex = -1);
 	};

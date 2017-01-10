@@ -1,6 +1,10 @@
 #include "FBXExporter.h"
 #include <stdio.h>
 
+FBXExporter::FBXExport::~FBXExport()
+{
+}
+
 void FBXExporter::FBXExport::FBXConvert(char* filename, char* OutputName) {
 	InputFilePath = filename;
 	OutputFilePath = OutputName;
@@ -72,22 +76,23 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 		//FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
 		//FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
 		//AnimLength = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
-		int materialCount = NodeThing->GetSrcObjectCount<FbxSurfaceMaterial>();
-		for (int index = 0; index < materialCount; index++)
-		{
-			FbxSurfaceMaterial* material = (FbxSurfaceMaterial*)NodeThing->GetSrcObject<FbxSurfaceMaterial>(index);
-			if (material != NULL)
-			{
-				FbxProperty prop = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
-				int textureCount = prop.GetSrcObjectCount<FbxTexture>();
-				for (int j = 0; j < textureCount; j++)
-				{
-					FbxTexture* texture = FbxCast<FbxTexture>(prop.GetSrcObject<FbxTexture>(j));
-					const char* textureName = texture->GetName();
-					FbxProperty p = texture->RootProperty.Find("Filename");
-				}
-			}
-		}
+		
+		//int materialCount = NodeThing->GetSrcObjectCount<FbxSurfaceMaterial>();
+		//for (int index = 0; index < materialCount; index++)
+		//{
+		//	FbxSurfaceMaterial* material = (FbxSurfaceMaterial*)NodeThing->GetSrcObject<FbxSurfaceMaterial>(index);
+		//	if (material != NULL)
+		//	{
+		//		FbxProperty prop = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+		//		int textureCount = prop.GetSrcObjectCount<FbxTexture>();
+		//		for (int j = 0; j < textureCount; j++)
+		//		{
+		//			FbxTexture* texture = FbxCast<FbxTexture>(prop.GetSrcObject<FbxTexture>(j));
+		//			const char* textureName = texture->GetName();
+		//			FbxProperty p = texture->RootProperty.Find("Filename");
+		//		}
+		//	}
+		//}
 		//gets all bones, the bind pose matric, bone weights, vertex per bones
 		int numDefs = Mesh->GetDeformerCount();
 		FbxSkin* skin = (FbxSkin*)Mesh->GetDeformer(0, FbxDeformer::eSkin);
