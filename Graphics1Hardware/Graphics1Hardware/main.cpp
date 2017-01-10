@@ -26,6 +26,8 @@ using namespace std;
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 using namespace DirectX;
+#include "BasicToLightVertexShader.csh"
+#include "BasicLightPixelShader.csh"
 #include "BasicVertexShader.csh"
 #include "BasicPixelShader.csh"
 #include "DeviceResources.h"
@@ -399,8 +401,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext->ContextData.push_back(Buffer12);
 
 
-	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -409,6 +411,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 
 	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc2), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), ModelContext->m_inputLayout.GetAddressOf());
+
+
 
 	planeContext->AddChild(planeShape);
 	planeContext->AddChild(ModelContext);
