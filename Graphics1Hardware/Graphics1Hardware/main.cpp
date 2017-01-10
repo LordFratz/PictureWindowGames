@@ -17,6 +17,7 @@
 #include <ctime>
 #include "XTime.h"
 #include <memory>
+#include "../FBXExporter/FBXExporter.h"
 #pragma comment (lib, "d3d11.lib")
 
 using namespace std;
@@ -57,6 +58,13 @@ struct VertexPositionColor
 	XMFLOAT3 color;
 };
 
+struct VertexPositionUVWNorm
+{
+	XMFLOAT4 pos;
+	XMFLOAT4 UVW;
+	XMFLOAT4 Norm;
+};
+
 class Camera
 {
 	XMMATRIX viewMatrix;
@@ -71,8 +79,13 @@ public:
 
 		viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
 		XMStoreFloat4x4(&cameraData.view, XMMatrixTranspose(viewMatrix));
+<<<<<<< HEAD
 		XMStoreFloat4(&cameraData.cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
 		float aspectRatio = sWidth / sHeight;
+=======
+
+		float aspectRatio = float(sWidth) / float(sHeight);
+>>>>>>> 9c76f6d656f32b71bb1aaf4e02a2f098ac84b159
 		float fovAngleY = 60.0f * XM_PI / 180.0f;
 
 		if (aspectRatio < 1.0f)
@@ -168,10 +181,14 @@ class DEMO_APP
 
 	//FBXLoaded data (temp till milestone 2)
 	FBXExporter::FBXExport FBX;
+<<<<<<< HEAD
 
 
 	//added for dynamic light
 	DirectionalLight dynaLight;
+=======
+	//added for camera
+>>>>>>> 9c76f6d656f32b71bb1aaf4e02a2f098ac84b159
 
 public:
 	struct SIMPLE_VERTEX
@@ -288,6 +305,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	auto Device = devResources->GetD3DDevice();
 
+
+
+#if 1
 	//Start Plane Init
 	planeContext = new RenderContext(devResources, PlaneContext, false);
 	planeMesh = new RenderMesh();
@@ -376,6 +396,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
+#endif
+
+	//WILL NEED TO BE REPLACED WHEN TREVOR FIXES THINGS!!!
+	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[FBX.Verts.size()];
+	for (size_t i = 0; i < FBX.Verts.size(); i++)
+	{
+		VertexPositionUVWNorm Temp;
+		Temp.pos = XMFLOAT4(FBX.Verts[i].pos[0], FBX.Verts[i].pos[1], FBX.Verts[i].pos[2], FBX.Verts[i].pos[3]);
+		Temp.UVW = XMFLOAT4(FBX.UVs[i].pos[0], FBX.UVs[i].pos[1], FBX.UVs[i].pos[2], FBX.UVs[i].pos[3]);
+		Temp.Norm = XMFLOAT4(FBX.Normals[i].pos[0], FBX.Normals[i].pos[1], FBX.Normals[i].pos[2], FBX.Normals[i].pos[3]);
+		VertexBuffer[i] = Temp;
+	}
+
+
 
 	planeContext->AddChild(planeShape);
 
@@ -398,7 +432,7 @@ bool DEMO_APP::Run()
 	auto targetView = devResources->GetBackBufferRenderTargetView();
 	auto viewport = devResources->GetScreenViewport();
 	timer.Signal();
-	float delta = timer.Delta();
+	float delta = (float)timer.Delta();
 
 	CurrCamera->update(delta);
 
