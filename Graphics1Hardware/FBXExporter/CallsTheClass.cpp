@@ -104,3 +104,24 @@ int * whatever::GetParentInds()
 	}
 	return PInds;
 }
+
+int whatever::GetVertCount()
+{
+	return MyExporter.Verts.size();
+}
+
+int whatever::GetIndCount()
+{
+	return MyExporter.Indecies.size();
+}
+
+int* whatever::GetBoneCounts()
+{
+	int* Bonethang = new int[MyExporter.Skeleton.size() * 2 + 1];
+	Bonethang[0] = MyExporter.Skeleton.size();
+	for (int i = 0; i < MyExporter.Skeleton.size(); i++) {
+		Bonethang[1 + (i * 2 + 0)] = MyExporter.Skeleton[i].BoneVertInds.size();
+		Bonethang[1 + (i * 2 + 1)] = MyExporter.Skeleton[i].BoneWeights.size();
+	}
+	return Bonethang;
+}
