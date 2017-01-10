@@ -35,7 +35,7 @@ PixelShaderInput main(VertexShaderInput input)
 	pos = mul(pos, view);
 	pos = mul(pos, projection);
 	output.pos = pos;
-	
+
 	pos = input.norm;
 	pos.w = 1.0f;
 	pos = mul(pos, worldMatrix);
@@ -45,7 +45,7 @@ PixelShaderInput main(VertexShaderInput input)
 	pos.y = cameraPosition.y;
 	pos.z = cameraPosition.z;
 	output.cameraPos = pos;
-	
+
 	output.uvw = input.uvw;
 
 	return output;
