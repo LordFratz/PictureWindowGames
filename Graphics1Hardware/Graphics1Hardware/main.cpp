@@ -17,6 +17,7 @@
 #include <ctime>
 #include "XTime.h"
 #include <memory>
+#include "../FBXExporter/FBXExporter.h"
 #pragma comment (lib, "d3d11.lib")
 
 using namespace std;
@@ -25,9 +26,6 @@ using namespace std;
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 using namespace DirectX;
-#include "FBXExporter.h"
-#include "Trivial_VS.csh"
-#include "Trivial_PS.csh"
 #include "BasicVertexShader.csh"
 #include "BasicPixelShader.csh"
 #include "DeviceResources.h"
@@ -273,6 +271,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	auto Device = devResources->GetD3DDevice();
 
+
+
+#if 1
 	//Start Plane Init
 	planeContext = new RenderContext(devResources, PlaneContext, false);
 	planeMesh = new RenderMesh();
@@ -329,6 +330,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
+#endif
+
+
 
 	planeContext->AddChild(planeShape);
 
