@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Graphics1Hardware", "Graphics1Hardware\Graphics1Hardware.vcxproj", "{02A0DF67-4787-4453-B6C1-F6F8B5E6E80E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBXExporter", "FBXExporter\FBXExporter.vcxproj", "{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{02A0DF67-4787-4453-B6C1-F6F8B5E6E80E}.Release|x64.Build.0 = Release|x64
 		{02A0DF67-4787-4453-B6C1-F6F8B5E6E80E}.Release|x86.ActiveCfg = Release|Win32
 		{02A0DF67-4787-4453-B6C1-F6F8B5E6E80E}.Release|x86.Build.0 = Release|Win32
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Debug|x64.ActiveCfg = Debug|x64
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Debug|x64.Build.0 = Debug|x64
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Debug|x86.ActiveCfg = Debug|Win32
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Debug|x86.Build.0 = Debug|Win32
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Release|x64.ActiveCfg = Release|x64
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Release|x64.Build.0 = Release|x64
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Release|x86.ActiveCfg = Release|Win32
+		{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
