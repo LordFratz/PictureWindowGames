@@ -22,6 +22,7 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, char* OutputName) 
 	Importer->Destroy();
 	FbxNode* RootNode = Scene->GetRootNode();
 	ExportFBX(RootNode);
+	ConvertToDirectX();
 }
 
 void FBXExporter::FBXExport::ConvertToDirectX()

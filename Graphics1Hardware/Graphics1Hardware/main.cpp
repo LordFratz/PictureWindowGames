@@ -229,7 +229,7 @@ namespace
 		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, &Node->WorldMat, 0, 0);
 		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
-		UINT stride = sizeof(VertexPositionColor);
+		UINT stride = sizeof(VertexPositionUVWNorm);
 		UINT offset = 0;
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -255,6 +255,22 @@ namespace
 	{
 		auto Node = &(RenderShape&)rNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, &Node->WorldMat, 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(VertexPositionUVWNorm);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
+		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
+		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
+
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 
 	}
 }
@@ -317,7 +333,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-#if false //use this section once the plane has UVs, normals, and a texture loaded
+#if true //use this section once the plane has UVs, normals, and a texture loaded
 	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
@@ -350,12 +366,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer2->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer2);
 
-	static const VertexPositionColor cubeVertices[] =
+	static const VertexPositionUVWNorm cubeVertices[] =
 	{
-		{ XMFLOAT3(-2.5f, -0.5f, -2.5f), XMFLOAT3(0.0f, 0.0f, 0.0f) },
-		{ XMFLOAT3(-2.5f, -0.5f,  2.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(2.5f, -0.5f, -2.5f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-		{ XMFLOAT3(2.5f, -0.5f,  2.5f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
+		{ XMFLOAT4(-2.5f, -0.5f, -2.5f, 0.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT4(-2.5f, -0.5f,  2.5f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT4(2.5f, -0.5f, -2.5f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT4(2.5f, -0.5f,  2.5f, 0.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) }
 	};
 
 	D3D11_SUBRESOURCE_DATA BufferData = { 0 };
@@ -408,10 +424,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	int numVerts = whatever::GetVertCount();
 	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
-	int* IndexBuffer = whatever::GetInd();
+	int* TempIndexBuffer = whatever::GetInd();
 	float* UVs = whatever::GetUVs();
 	float* Norms = whatever::GetNormals();
 	float* Verts = whatever::GetVerts();
+	int numIndices = whatever::GetIndCount();
 	for (int i = 0; i < numVerts; i++)
 	{
 		VertexPositionUVWNorm Temp;
@@ -419,19 +436,26 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.UVW = XMFLOAT4(UVs[i*2], UVs[i*2+1], 0, 0);
 		Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
 		VertexBuffer[i] = Temp;
+		int j = 0;
 	}
-
+	short* IndexBuffer = new short[numIndices];
+	for(int i = 0; i < numIndices; i++)
+	{
+		IndexBuffer[i] = (short)TempIndexBuffer[i];
+	}
+	delete TempIndexBuffer;
 
 	ModelContext = new RenderContext(devResources, TexturedContext, false);
 	ModelMesh = new RenderMesh();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), TexturedShape);
+	ModelMesh->m_indexCount = whatever::GetIndCount();
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), PlaneShape);
 
 	BufferData = { 0 };
 	BufferData.pSysMem = IndexBuffer;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_INDEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * ModelMesh->m_indexCount, D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, ModelShape->Mesh.m_indexBuffer.GetAddressOf());;
 
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER);
@@ -444,7 +468,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexBuffer), D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer10);
@@ -453,7 +477,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
 	ModelContext->ContextData.push_back(Buffer12);
-
 
 	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
@@ -469,7 +492,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 	planeContext->AddChild(planeShape);
-	planeContext->AddChild(ModelContext);
 	planeContext->AddChild(ModelShape);
 	Set = RenderSet();
 	Set.SetHead(planeContext);
