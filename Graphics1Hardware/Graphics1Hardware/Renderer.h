@@ -124,7 +124,6 @@ public:
 	}
 	~RenderShape()
 	{
-		delete next;
 	}
 };
 
@@ -134,7 +133,6 @@ class RenderSet
 public:
 	~RenderSet()
 	{
-		delete head;
 	}
 	RenderNode* GetHead() const { return head; }
 	void SetHead(RenderNode* Head) { head = Head; }
