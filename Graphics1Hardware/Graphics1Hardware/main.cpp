@@ -87,6 +87,10 @@ class DEMO_APP
 	SEND_TO_VRAM toShader;
 	SEND_TO_VRAM toShader2;
 
+	//added for camera
+	XMMATRIX viewMatrix;
+	POINT currCursor, prevCursor;
+
 public:
 	struct SIMPLE_VERTEX
 	{
@@ -234,7 +238,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	static const XMVECTORF32 eye = { 0.0f, 0.0f, -1.5f, 0.0f };
 	static const XMVECTORF32 at = { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-	XMStoreFloat4x4(&CurrCamera->cameraData.view, XMMatrixTranspose(XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up))));
+	
+	viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
+	XMStoreFloat4x4(&CurrCamera->cameraData.view, XMMatrixTranspose(viewMatrix));
 
 	float aspectRatio = BACKBUFFER_WIDTH / BACKBUFFER_HEIGHT;
 	float fovAngleY = 60.0f * XM_PI / 180.0f;
@@ -391,6 +397,44 @@ bool DEMO_APP::Run()
 	auto dContext = devResources->GetD3DDeviceContext();
 	auto targetView = devResources->GetBackBufferRenderTargetView();
 	auto viewport = devResources->GetScreenViewport();
+
+	//camera runtime input
+	float cameraSpeed = 0.5f * 0.001f; // * a delta time when time is added
+	float cameraRotateSpeed = 5.0f * cameraSpeed;
+	GetCursorPos(&currCursor);
+	if (GetAsyncKeyState(87))
+		viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, -cameraSpeed), viewMatrix);
+	if (GetAsyncKeyState(83))
+		viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, cameraSpeed), viewMatrix);
+	if (GetAsyncKeyState(65))
+		viewMatrix = XMMatrixMultiply(XMMatrixTranslation(-cameraSpeed, 0.0f, 0.0f), viewMatrix);
+	if (GetAsyncKeyState(68))
+		viewMatrix = XMMatrixMultiply(XMMatrixTranslation(cameraSpeed, 0.0f, 0.0f), viewMatrix);
+	if (GetAsyncKeyState(67))
+		viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, cameraSpeed, 0.0f), viewMatrix);
+	if (GetAsyncKeyState(88))
+		viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, -cameraSpeed, 0.0f), viewMatrix);
+
+	if (GetAsyncKeyState(2))
+	{
+		float deltaX = (float)(currCursor.x - prevCursor.x);
+		float deltaY = (float)(currCursor.y - prevCursor.y);
+		XMMATRIX tempMatrix = viewMatrix;
+		XMVectorSetX(viewMatrix.r[3], 0.0f);
+		XMVectorSetY(viewMatrix.r[3], 0.0f);
+		XMVectorSetZ(viewMatrix.r[3], 0.0f);
+		viewMatrix = XMMatrixMultiply(XMMatrixRotationX(deltaY * cameraRotateSpeed), viewMatrix);
+		viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixRotationY(deltaX * cameraRotateSpeed));
+		XMVectorSetX(viewMatrix.r[3], XMVectorGetX(tempMatrix.r[3]));
+		XMVectorSetY(viewMatrix.r[3], XMVectorGetY(tempMatrix.r[3]));
+		XMVectorSetZ(viewMatrix.r[3], XMVectorGetZ(tempMatrix.r[3]));
+	}
+	
+	
+
+	XMStoreFloat4x4(&CurrCamera->cameraData.view, XMMatrixTranspose(viewMatrix));
+	prevCursor = currCursor;
+	//end camera runtime input
 
 	dContext->OMSetRenderTargets(1, &targetView, NULL);
 	dContext->RSSetViewports(1, &viewport);
