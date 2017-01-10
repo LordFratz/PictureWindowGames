@@ -1,17 +1,17 @@
 #pragma once
 
-//#ifdef FBXEXPORTER_EXPORTS
-//#define EXPORT __declspec(dllexport)
-//#else
-//#define EXPORT __declspec(dllimport)
-//#endif
+#ifdef FBXEXPORTERDLL_EXPORTS
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __declspec(dllimport)
+#endif
 
 #include <fbxsdk.h>
 #include <unordered_map>
 
 namespace FBXExporter
 {
-	class FBXExport
+	EXPORT class FBXExport
 	{
 	private:
 
@@ -31,7 +31,7 @@ namespace FBXExporter
 			FbxAMatrix GlobalTransform;
 			KeyFrame* mNext = nullptr;
 		};
-
+	public:
 		FbxManager* SdkManager;
 		FbxScene* Scene;
 		char* InputFilePath;
@@ -45,8 +45,7 @@ namespace FBXExporter
 		FbxLongLong AnimLength;
 		std::vector<KeyFrame> Animation;
 		FbxTexture* Texture;
-		
-	public:
+
 		FBXExport() {};
 		/*static EXPORT*/ void FBXConvert(char* filename, char* OutputName);
 		void ExportFBX(FbxNode* NodeThing, int ParentIndex = -1);

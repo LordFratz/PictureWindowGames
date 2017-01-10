@@ -1,13 +1,5 @@
-#include "FBXExportTest.h"
+#include "FBXExporter.h"
 #include <stdio.h>
-
-int main()
-{
-	FBXExporter::FBXExport temp;
-	temp.FBXConvert("../Resources/Box_Idle.fbx", "whatever");
-	int x = 0;
-	return 0;
-}
 
 void FBXExporter::FBXExport::FBXConvert(char* filename, char* OutputName) {
 	InputFilePath = filename;
