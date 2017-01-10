@@ -17,7 +17,6 @@
 #include <ctime>
 #include "XTime.h"
 #include <memory>
-#include "../FBXExporter/FBXExporter.h"
 #pragma comment (lib, "d3d11.lib")
 
 using namespace std;
@@ -177,14 +176,11 @@ class DEMO_APP
 	SEND_TO_VRAM toShader2;
 
 	//FBXLoaded data (temp till milestone 2)
-<<<<<<< HEAD
 
 
 	//added for dynamic light
 	DirectionalLight dynaLight;
-=======
 	//added for camera
->>>>>>> 9c76f6d656f32b71bb1aaf4e02a2f098ac84b159
 
 public:
 	struct SIMPLE_VERTEX
@@ -294,7 +290,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//********************* END WARNING ************************//
 
 	//Loads in data from fbx file into FBX with examples
-	whatever::loadFile("../Resources/Box_Jump.fbx");
+	//whatever::loadFile("../Resources/Box_Jump.fbx");
 	//float** BoneMatTest = whatever::GetBoneBindMat();
 	//int** BoneVertTest = whatever::GetBoneVertInds();
 	//float** BoneWeightTest = whatever::GetBoneWeights();
