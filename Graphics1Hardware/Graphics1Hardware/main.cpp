@@ -338,6 +338,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
+	//WILL NEED TO BE REPLACED WHEN TREVOR FIXES THINGS!!!
 	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[FBX.Verts.size()];
 	for (size_t i = 0; i < FBX.Verts.size(); i++)
 	{
