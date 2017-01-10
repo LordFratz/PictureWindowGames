@@ -104,6 +104,10 @@ public:
 
 namespace
 {
+	/// <summary>
+	/// Generic TEXTURELESS RenderContext Function
+	/// </summary>
+	/// <param name="rNode">The r node.</param>
 	void PlaneContext(RenderNode &rNode)
 	{
 		auto Node = &(RenderContext&)rNode;
@@ -118,6 +122,10 @@ namespace
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
 	}
 
+	/// <summary>
+	/// Generic TEXTURELESS RenderShape Function
+	/// </summary>
+	/// <param name="rNode">The r node.</param>
 	void PlaneShape(RenderNode &rNode)
 	{
 		auto Node = &(RenderShape&)rNode;
@@ -172,8 +180,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	devResources->initialize(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, window);
 
 	auto Device = devResources->GetD3DDevice();
-	auto dContext = devResources->GetD3DDeviceContext();
 
+	//Start Plane Init
 	planeContext = new RenderContext(devResources, PlaneContext, false);
 	planeMesh = new RenderMesh();
 	XMFLOAT4X4 mat;
@@ -228,6 +236,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemSlicePitch = 0;
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
+	//End Plane Init
 
 	planeContext->AddChild(planeShape);
 
@@ -235,10 +244,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Set.SetHead(planeContext);
 
 	CurrCamera = new Camera;
+
+	//Start Camera Init
 	static const XMVECTORF32 eye = { 0.0f, 0.0f, -1.5f, 0.0f };
 	static const XMVECTORF32 at = { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-	
+
 	viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
 	XMStoreFloat4x4(&CurrCamera->cameraData.view, XMMatrixTranspose(viewMatrix));
 
@@ -258,133 +269,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	);
 
 	XMStoreFloat4x4(&CurrCamera->cameraData.projection, XMMatrixTranspose(perspectiveMatrix));
-
-#if 0
-	SIMPLE_VERTEX circle[361];
-	for (unsigned int i = 0; i < vertCount - 1; i++)
-	{
-		circle[i].position.x = sin(XMConvertToRadians((float)i)) * .2f;
-		circle[i].position.y = cos(XMConvertToRadians((float)i)) * .2f;
-	}
-	circle[360] = circle[0];
-
-	D3D11_SUBRESOURCE_DATA data;
-	ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
-	data.pSysMem = circle;
-	data.SysMemPitch = NULL;
-	data.SysMemSlicePitch = NULL;
-
-	D3D11_BUFFER_DESC buffDesc;
-	ZeroMemory(&buffDesc, sizeof(D3D11_BUFFER_DESC));
-	buffDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	buffDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	buffDesc.CPUAccessFlags = NULL;
-	buffDesc.ByteWidth = sizeof(SIMPLE_VERTEX) * vertCount;
-	Device->CreateBuffer(&buffDesc, &data, &VertBuffer);
-
-	SIMPLE_VERTEX background[NumVertsBackground];
-	unsigned int vertPos = 0;
-	for(unsigned int y = 0; y < 20; y++)
-	{
-		for(unsigned int x = 0; x < 20; x+= 2)
-		{
-			if (y % 2 == 1)
-			{
-				float vertPosX = 1 - .1 * x;
-				float vertPosY = -1 * (1 - .1 * y);
-				background[vertPos].position.x = vertPosX;
-				background[vertPos].position.y = vertPosY;
-				vertPos++;
-				background[vertPos].position.x = vertPosX - .1f;
-				background[vertPos].position.y = vertPosY;
-				vertPos++;
-				background[vertPos].position.x = vertPosX;
-				background[vertPos].position.y = vertPosY + .1f;
-				vertPos++;
-				background[vertPos].position.x = vertPosX;
-				background[vertPos].position.y = vertPosY + .1f;
-				vertPos++;
-				background[vertPos].position.x = vertPosX - .1f;
-				background[vertPos].position.y = vertPosY;
-				vertPos++;
-				background[vertPos].position.x = vertPosX - .1f;
-				background[vertPos].position.y = vertPosY + .1f;
-				vertPos++;
-			}
-			else
-			{
-				float vertPosX = 1 - .1 * (x + 1);
-				float vertPosY = -1 * (1 - .1 * y);
-				background[vertPos].position.x = vertPosX;
-				background[vertPos].position.y = vertPosY;
-				vertPos++;
-				background[vertPos].position.x = vertPosX - .1f;
-				background[vertPos].position.y = vertPosY;
-				vertPos++;
-				background[vertPos].position.x = vertPosX;
-				background[vertPos].position.y = vertPosY + .1f;
-				vertPos++;
-				background[vertPos].position.x = vertPosX;
-				background[vertPos].position.y = vertPosY + .1f;
-				vertPos++;
-				background[vertPos].position.x = vertPosX - .1f;
-				background[vertPos].position.y = vertPosY;
-				vertPos++;
-				background[vertPos].position.x = vertPosX - .1f;
-				background[vertPos].position.y = vertPosY + .1f;
-				vertPos++;
-			}
-		}
-	}
-
-	D3D11_SUBRESOURCE_DATA data3;
-	ZeroMemory(&data3, sizeof(D3D11_SUBRESOURCE_DATA));
-	data3.pSysMem = background;
-	data3.SysMemPitch = NULL;
-	data3.SysMemSlicePitch = NULL;
-
-	D3D11_BUFFER_DESC buffDesc2;
-	ZeroMemory(&buffDesc2, sizeof(D3D11_BUFFER_DESC));
-	buffDesc2.Usage = D3D11_USAGE_IMMUTABLE;
-	buffDesc2.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	buffDesc2.CPUAccessFlags = NULL;
-	buffDesc2.ByteWidth = sizeof(SIMPLE_VERTEX) * NumVertsBackground;
-	HRESULT blah = Device->CreateBuffer(&buffDesc2, &data3, &BackgroundBuffer);
-
-	Device->CreateVertexShader(&Trivial_VS, ARRAYSIZE(Trivial_VS), NULL, &pVS);
-	Device->CreatePixelShader(&Trivial_PS, ARRAYSIZE(Trivial_PS), NULL, &pPS);
-	D3D11_INPUT_ELEMENT_DESC vLayout[] =
-	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
-	};
-
-	Device->CreateInputLayout(vLayout, ARRAYSIZE(vLayout), &Trivial_VS, ARRAYSIZE(Trivial_VS), &pLayout);
-	dContext->IASetInputLayout(pLayout);
-
-	D3D11_BUFFER_DESC constDesc;
-	ZeroMemory(&constDesc, sizeof(D3D11_BUFFER_DESC));
-	constDesc.ByteWidth = sizeof(SEND_TO_VRAM);
-	constDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	constDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	constDesc.Usage = D3D11_USAGE_DYNAMIC;
-
-	toShader.constantColor = Colors::Yellow;
-	toShader.constantOffset.x = 0;
-	toShader.constantOffset.y = 0;
-	toShader2.constantColor = Colors::Black;
-	toShader2.constantOffset.x = 0;
-	toShader2.constantOffset.y = 0;
-
-	D3D11_SUBRESOURCE_DATA data2;
-	ZeroMemory(&data2, sizeof(D3D11_SUBRESOURCE_DATA));
-	data2.pSysMem = &toShader;
-	data2.SysMemPitch = 0;
-	data2.SysMemSlicePitch = 0;
-	Device->CreateBuffer(&constDesc, &data2, &ConstBuffer);
-	offsetVel.x = 1.0f;
-	offsetVel.y = .5f;;
+	//End Camera Init
 	timer.Restart();
-#endif
 }
 
 //************************************************************
@@ -397,6 +283,8 @@ bool DEMO_APP::Run()
 	auto dContext = devResources->GetD3DDeviceContext();
 	auto targetView = devResources->GetBackBufferRenderTargetView();
 	auto viewport = devResources->GetScreenViewport();
+	timer.Signal();
+	float delta = timer.Delta();
 
 	//camera runtime input
 	float cameraSpeed = 0.5f * 0.001f; // * a delta time when time is added
@@ -429,8 +317,8 @@ bool DEMO_APP::Run()
 		XMVectorSetY(viewMatrix.r[3], XMVectorGetY(tempMatrix.r[3]));
 		XMVectorSetZ(viewMatrix.r[3], XMVectorGetZ(tempMatrix.r[3]));
 	}
-	
-	
+
+
 
 	XMStoreFloat4x4(&CurrCamera->cameraData.view, XMMatrixTranspose(viewMatrix));
 	prevCursor = currCursor;
@@ -440,56 +328,6 @@ bool DEMO_APP::Run()
 	dContext->RSSetViewports(1, &viewport);
 	FLOAT color[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	dContext->ClearRenderTargetView(targetView, color);
-
-#if 0
-	timer.Signal();
-	float delta = timer.Delta();
-	toShader.constantOffset.x += offsetVel.x * delta;
-	toShader.constantOffset.y += offsetVel.y * delta;
-	if(toShader.constantOffset.x + .18 > 1.0f)
-	{
-		offsetVel.x = -1.0f;
-	}
-	else if(toShader.constantOffset.x - .18 < -1.0f)
-	{
-		offsetVel.x = 1.0f;
-	}
-	if(toShader.constantOffset.y + .18 > 1.0f)
-	{
-		offsetVel.y = -.5f;
-	}
-	if(toShader.constantOffset.y - .18 < -1.0f)
-	{
-		offsetVel.y = .5f;
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-	dContext->Map(ConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-	memcpy(mappedResource.pData, &toShader2, sizeof(SEND_TO_VRAM));
-	dContext->Unmap(ConstBuffer, 0);
-	dContext->VSSetConstantBuffers(0, 1, &ConstBuffer);
-
-	UINT stride = sizeof(SIMPLE_VERTEX);
-	UINT offset = 0;
-	dContext->IASetVertexBuffers(0, 1, &BackgroundBuffer, &stride, &offset);
-	dContext->VSSetShader(pVS, NULL, 0);
-	dContext->PSSetShader(pPS, NULL, 0);
-	dContext->IASetInputLayout(pLayout);
-	dContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	dContext->Draw(NumVertsBackground, 0);
-	ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-	dContext->Map(ConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-	memcpy(mappedResource.pData, &toShader, sizeof(SEND_TO_VRAM));
-	dContext->Unmap(ConstBuffer, 0);
-	dContext->VSSetConstantBuffers(0, 1, &ConstBuffer);
-	dContext->IASetVertexBuffers(0, 1, &VertBuffer, &stride, &offset);
-	dContext->VSSetShader(pVS, NULL, 0);
-	dContext->PSSetShader(pPS, NULL, 0);
-	dContext->IASetInputLayout(pLayout);
-	dContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP);
-	dContext->Draw(vertCount, 0);
-#endif
 
 	Renderer::Render(&Set);
 
@@ -505,6 +343,8 @@ bool DEMO_APP::Run()
 bool DEMO_APP::ShutDown()
 {
 	delete planeContext;
+	delete planeShape;
+	delete planeMesh;
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
 }
