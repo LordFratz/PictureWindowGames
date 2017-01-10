@@ -13,5 +13,8 @@ extern "C" {
 		EXPORT int** GetBoneVertInds();
 		EXPORT float** GetBoneWeights();
 		EXPORT int* GetParentInds();
+		EXPORT int GetVertCount();
+		EXPORT int GetIndCount();
+		EXPORT int* GetBoneCounts();
 	}
 };
