@@ -35,7 +35,7 @@ VertexShaderOutput main( VertexShaderInput IN)
 
 	OUT.PositionWS = mul(worldMatrix, float4(IN.Position, 1.0f));
 
-	OUT.NormalWS = mul((worldMatrix, IN.Normal);
+	OUT.NormalWS = mul(worldMatrix, IN.Normal);
 
 	OUT.TexCoord = IN.TexCoord;
 
