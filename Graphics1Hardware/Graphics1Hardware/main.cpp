@@ -265,9 +265,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #endif
 	//********************* END WARNING ************************//
 
-	//Loads in data from fbx file into FBX
-	//FBX.FBXConvert("../Resources/Box_Jump.fbx", "whateverfornow");
+	//Loads in data from fbx file into FBX with examples
 	whatever::loadFile("../Resources/Box_Jump.fbx");
+	//float** BoneMatTest = whatever::GetBoneBindMat();
+	//int** BoneVertTest = whatever::GetBoneVertInds();
+	//float** BoneWeightTest = whatever::GetBoneWeights();
+	//int* BoneParentTest = whatever::GetParentInds();
 
 	devResources = make_shared<DeviceResources>();
 	devResources->initialize(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, window);

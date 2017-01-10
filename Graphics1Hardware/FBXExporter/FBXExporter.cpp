@@ -86,6 +86,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 					vert.pos[0] = (float)tempverts[CPIndex].mData[0];
 					vert.pos[1] = (float)tempverts[CPIndex].mData[1];
 					vert.pos[2] = (float)tempverts[CPIndex].mData[2];
+					vert.pos[3] = 1;
 
 					newNormal.pos[0] = (float)tempNormal.mData[0];
 					newNormal.pos[1] = (float)tempNormal.mData[1];
