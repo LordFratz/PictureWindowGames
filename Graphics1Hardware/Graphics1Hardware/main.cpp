@@ -406,7 +406,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-	int numVerts = 16;
+	int numVerts = whatever::GetVertCount();
 	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
 	int* IndexBuffer = whatever::GetInd();
 	float* UVs = whatever::GetUVs();
@@ -429,6 +429,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_INDEX_BUFFER);
+	Device->CreateBuffer(&constBuffDesc, &BufferData, ModelShape->Mesh.m_indexBuffer.GetAddressOf());;
+
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER);
 	auto Buffer11 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer11->GetAddressOf());
@@ -439,13 +442,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexBuffer), D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer10);
-
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_INDEX_BUFFER);
-	Device->CreateBuffer(&constBuffDesc, &BufferData,ModelShape->Mesh.m_indexBuffer.GetAddressOf());
 
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
 	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
