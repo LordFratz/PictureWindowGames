@@ -25,7 +25,7 @@ using namespace std;
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 using namespace DirectX;
-#include "FBXExporter.h"
+#include "../FBXExporter/IncludeMe.h"
 #include "Trivial_VS.csh"
 #include "Trivial_PS.csh"
 #include "BasicVertexShader.csh"
@@ -154,7 +154,7 @@ class DEMO_APP
 	SEND_TO_VRAM toShader2;
 
 	//FBXLoaded data (temp till milestone 2)
-	FBXExporter::FBXExport FBX;
+
 
 	//added for camera
 
@@ -266,7 +266,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//********************* END WARNING ************************//
 
 	//Loads in data from fbx file into FBX
-	FBX.FBXConvert("../Resources/Box_Jump.fbx", "whateverfornow");
+	//FBX.FBXConvert("../Resources/Box_Jump.fbx", "whateverfornow");
+	whatever::loadFile("../Resources/Box_Jump.fbx");
 
 	devResources = make_shared<DeviceResources>();
 	devResources->initialize(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, window);

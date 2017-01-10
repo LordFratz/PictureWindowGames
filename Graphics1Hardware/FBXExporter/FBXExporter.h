@@ -1,17 +1,11 @@
 #pragma once
 
-#ifdef FBXEXPORTER_EXPORTS
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __declspec(dllimport)
-#endif
-
 #include <fbxsdk.h>
 #include <unordered_map>
 
 namespace FBXExporter
 {
-	class EXPORT FBXExport
+	class FBXExport
 	{
 	private:
 
@@ -34,7 +28,7 @@ namespace FBXExporter
 	public:
 		FbxManager* SdkManager;
 		FbxScene* Scene;
-		char* InputFilePath;
+		std::string InputFilePath;
 		char* OutputFilePath;
 		//bool HasAnim = true;
 		std::vector<Vertex> Verts;
@@ -48,7 +42,7 @@ namespace FBXExporter
 
 		FBXExport() {};
 		~FBXExport();
-		/*static EXPORT*/ void FBXConvert(char* filename, char* OutputName);
+		/*static EXPORT*/ void FBXConvert(const char* filename, char* OutputName);
 	private:
 		void ConvertToDirectX();
 		void ExportFBX(FbxNode* NodeThing, int ParentIndex = -1);

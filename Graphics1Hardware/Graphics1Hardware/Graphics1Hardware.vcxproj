@@ -19,12 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\DDSTextureLoader.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="XTime.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\DDSTextureLoader.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="XTime.h" />
@@ -169,7 +171,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Program Files\Autodesk\FBX\FBX SDK\2016.1.1\include;E:\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\Autodesk\FBX\FBX SDK\2016.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>

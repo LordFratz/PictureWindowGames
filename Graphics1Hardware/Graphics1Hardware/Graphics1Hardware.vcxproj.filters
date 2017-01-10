@@ -33,6 +33,9 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\DDSTextureLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XTime.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\DDSTextureLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

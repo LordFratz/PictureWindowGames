@@ -5,7 +5,7 @@ FBXExporter::FBXExport::~FBXExport()
 {
 }
 
-void FBXExporter::FBXExport::FBXConvert(char* filename, char* OutputName) {
+void FBXExporter::FBXExport::FBXConvert(const char* filename, char* OutputName) {
 	InputFilePath = filename;
 	OutputFilePath = OutputName;
 	SdkManager = FbxManager::Create();

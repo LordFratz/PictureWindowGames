@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\IncludeMe.h" />
     <ClInclude Include="ExporterHeader.h" />
     <ClInclude Include="FBXExporter.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\CallsTheClass.cpp" />
     <ClCompile Include="FBXExporter.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
