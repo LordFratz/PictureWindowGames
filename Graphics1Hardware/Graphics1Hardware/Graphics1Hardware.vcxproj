@@ -67,11 +67,6 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FBXExporter\FBXExporter.vcxproj">
-      <Project>{5c3f94b4-bbe0-46aa-b248-67e0e9dc05ca}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{02A0DF67-4787-4453-B6C1-F6F8B5E6E80E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

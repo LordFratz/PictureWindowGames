@@ -18,6 +18,13 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ExporterHeader.h" />
+    <ClInclude Include="FBXExporter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FBXExporter.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5C3F94B4-BBE0-46AA-B248-67E0E9DC05CA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -161,13 +168,6 @@
       <IgnoreSpecificDefaultLibraries>LIBMCT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\ExporterHeader.h" />
-    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\FBXExporter.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\FBXExporter.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

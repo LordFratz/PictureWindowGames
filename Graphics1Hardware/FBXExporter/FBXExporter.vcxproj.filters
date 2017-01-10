@@ -15,15 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\FBXExporter.h">
+    <ClInclude Include="ExporterHeader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\ExporterHeader.h">
+    <ClInclude Include="FBXExporter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\FBXExporter\FBXExporter.cpp">
+    <ClCompile Include="FBXExporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
