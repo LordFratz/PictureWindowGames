@@ -79,13 +79,10 @@ public:
 
 		viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
 		XMStoreFloat4x4(&cameraData.view, XMMatrixTranspose(viewMatrix));
-<<<<<<< HEAD
 		XMStoreFloat4(&cameraData.cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
 		float aspectRatio = sWidth / sHeight;
-=======
-
 		float aspectRatio = float(sWidth) / float(sHeight);
->>>>>>> 9c76f6d656f32b71bb1aaf4e02a2f098ac84b159
+
 		float fovAngleY = 60.0f * XM_PI / 180.0f;
 
 		if (aspectRatio < 1.0f)
