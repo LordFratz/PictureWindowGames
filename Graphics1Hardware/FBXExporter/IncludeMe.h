@@ -1,7 +1,6 @@
 #pragma once
 
 #define EXPORT __declspec(dllexport)
-#include <vector>
 
 extern "C" {
 	namespace whatever {
