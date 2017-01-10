@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef FBXEXPORTERDLL_EXPORTS
+#ifdef FBXEXPORTER_EXPORTS
 #define EXPORT __declspec(dllexport)
 #else
 #define EXPORT __declspec(dllimport)
@@ -36,7 +36,7 @@ namespace FBXExporter
 		FbxScene* Scene;
 		char* InputFilePath;
 		char* OutputFilePath;
-		bool HasAnim = true;
+		//bool HasAnim = true;
 		std::vector<Vertex> Verts;
 		std::vector<Vertex> Normals;
 		std::vector<Vertex> UVs;
