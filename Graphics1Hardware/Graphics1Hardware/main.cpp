@@ -17,6 +17,7 @@
 #include <ctime>
 #include "XTime.h"
 #include <memory>
+#include "../FBXExporter/FBXExporter.h"
 #pragma comment (lib, "d3d11.lib")
 
 using namespace std;
@@ -30,6 +31,8 @@ using namespace DirectX;
 #include "Trivial_PS.csh"
 #include "BasicVertexShader.csh"
 #include "BasicPixelShader.csh"
+#include "BasicToLightVertexShader.csh"
+#include "BasicLightPixelShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
 #define BACKBUFFER_WIDTH	800
@@ -38,13 +41,28 @@ using namespace DirectX;
 struct ViewProj
 {
 	XMFLOAT4X4 view;
-	XMFLOAT4X4 projection;;
+	XMFLOAT4X4 projection;
+	XMFLOAT4 cameraPos;
+};
+
+struct DirectionalLight
+{
+	XMFLOAT4 dLightPos;
+	XMFLOAT4 dLightColor;
+	XMFLOAT4 dLightDir;
 };
 
 struct VertexPositionColor
 {
 	XMFLOAT3 pos;
 	XMFLOAT3 color;
+};
+
+struct VertexPositionUVWNorm
+{
+	XMFLOAT4 pos;
+	XMFLOAT4 UVW;
+	XMFLOAT4 Norm;
 };
 
 class Camera
@@ -61,8 +79,10 @@ public:
 
 		viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
 		XMStoreFloat4x4(&cameraData.view, XMMatrixTranspose(viewMatrix));
-
+		XMStoreFloat4(&cameraData.cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
 		float aspectRatio = sWidth / sHeight;
+		float aspectRatio = float(sWidth) / float(sHeight);
+
 		float fovAngleY = 60.0f * XM_PI / 180.0f;
 
 		if (aspectRatio < 1.0f)
@@ -114,6 +134,9 @@ public:
 		}
 
 		XMStoreFloat4x4(&cameraData.view, XMMatrixTranspose(viewMatrix));
+		XMVECTOR tempVec = viewMatrix.r[3];
+		XMVectorSetW(tempVec, 1.0f);
+		XMStoreFloat4(&(cameraData.cameraPos), tempVec);
 		prevCursor = currCursor;
 	}
 };
@@ -154,9 +177,14 @@ class DEMO_APP
 	SEND_TO_VRAM toShader2;
 
 	//FBXLoaded data (temp till milestone 2)
+<<<<<<< HEAD
 
 
+	//added for dynamic light
+	DirectionalLight dynaLight;
+=======
 	//added for camera
+>>>>>>> 9c76f6d656f32b71bb1aaf4e02a2f098ac84b159
 
 public:
 	struct SIMPLE_VERTEX
@@ -277,6 +305,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	auto Device = devResources->GetD3DDevice();
 
+
+
+#if 1
 	//Start Plane Init
 	planeContext = new RenderContext(devResources, PlaneContext, false);
 	planeMesh = new RenderMesh();
@@ -284,14 +315,31 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
 	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), PlaneShape);
 
+
+
+#if false //use this section once the plane has UVs, normals, and a texture loaded
+	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
+	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UVW" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORM" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), planeContext->m_inputLayout.GetAddressOf());
+#else //current plane
 	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), planeContext->m_inputLayout.GetAddressOf());
+#endif
+	
+
+
 	CD3D11_BUFFER_DESC constBuffDesc(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
 	auto Buffer = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer->GetAddressOf());
@@ -319,6 +367,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer3->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer3);
 
+	//Light initializations
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
+
+	D3D11_SUBRESOURCE_DATA BufferData2 = { 0 };
+	BufferData2.pSysMem = &dynaLight;
+	BufferData2.SysMemPitch = 0;
+	BufferData2.SysMemSlicePitch = 0;
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(DirectionalLight), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer4 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, &BufferData2, Buffer4->GetAddressOf());
+	//end light initializations
+
+
 	static const unsigned short cubeIndices[] =
 	{
 		0,2,1, // -x
@@ -333,6 +396,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
+#endif
+
+	//WILL NEED TO BE REPLACED WHEN TREVOR FIXES THINGS!!!
+	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[FBX.Verts.size()];
+	for (size_t i = 0; i < FBX.Verts.size(); i++)
+	{
+		VertexPositionUVWNorm Temp;
+		Temp.pos = XMFLOAT4(FBX.Verts[i].pos[0], FBX.Verts[i].pos[1], FBX.Verts[i].pos[2], FBX.Verts[i].pos[3]);
+		Temp.UVW = XMFLOAT4(FBX.UVs[i].pos[0], FBX.UVs[i].pos[1], FBX.UVs[i].pos[2], FBX.UVs[i].pos[3]);
+		Temp.Norm = XMFLOAT4(FBX.Normals[i].pos[0], FBX.Normals[i].pos[1], FBX.Normals[i].pos[2], FBX.Normals[i].pos[3]);
+		VertexBuffer[i] = Temp;
+	}
+
+
 
 	planeContext->AddChild(planeShape);
 
@@ -355,7 +432,7 @@ bool DEMO_APP::Run()
 	auto targetView = devResources->GetBackBufferRenderTargetView();
 	auto viewport = devResources->GetScreenViewport();
 	timer.Signal();
-	float delta = timer.Delta();
+	float delta = (float)timer.Delta();
 
 	CurrCamera->update(delta);
 

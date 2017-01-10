@@ -33,22 +33,22 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\DDSTextureLoader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DDSTextureLoader.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XTime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DeviceResources.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\DDSTextureLoader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DDSTextureLoader.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceResources.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -68,6 +68,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="TexturedVertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="BasicToLightVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
