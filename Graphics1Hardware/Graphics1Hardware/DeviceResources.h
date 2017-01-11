@@ -18,6 +18,7 @@ public:
 	D3D11_VIEWPORT				GetScreenViewport() const { return m_screenViewport; }
 	DirectX::XMFLOAT4X4			GetOrientationTransform3D() const { return m_orientationTransform3D; }
 
+	void checkResources();
 	void cleanup();
 	void initialize(int sWidth, int sHeight, HWND window);
 private:

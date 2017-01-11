@@ -558,9 +558,12 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
+	devResources->checkResources();
 	delete planeContext;
 	delete planeShape;
 	delete planeMesh;
+	delete ModelShape;
+	delete ModelMesh;
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
