@@ -259,6 +259,61 @@ namespace
 	}
 }
 
+
+//JIT extremely unoptomized, useful for only small numbers of objects
+namespace Collisions
+{
+	void CheckCollisions(std::vector<RenderShape*> *shapes)
+	{
+		XMVECTOR* tempPositions = new XMVECTOR[shapes->size()];
+
+		for (size_t i = 0; i < shapes->size(); i++)
+		{
+			tempPositions[i] = XMLoadFloat4x4(&((*shapes)[i]->WorldMat)).r[3];
+		}
+
+
+		for (size_t i = 0; i < shapes->size() - 1; i++)
+		{
+			float tempRadius = (*shapes)[i]->BoundingSphere.radius;
+			if (tempRadius > 0.0f)
+			{
+				for (size_t j = i; j < shapes->size(); j++)
+				{
+					float tempRadius2 = (*shapes)[j]->BoundingSphere.radius;
+					if (tempRadius2 > 0.0f && XMVector3Dot(tempPositions[i] - tempPositions[j], tempPositions[i] - tempPositions[j]).m128_f32[0] <= (tempRadius + tempRadius2) * (tempRadius + tempRadius2))
+					{
+						//collision! //add or trigger motion reaction and geometry deformation //will return to this later
+					}					
+				}
+			}
+			else if (tempRadius == 0.0f)
+			{
+				//shape is the ground plane, check against all other shapes
+				for (size_t j = i; j < shapes->size(); j++)
+				{
+					float tempRadius2 = (*shapes)[j]->BoundingSphere.radius;
+					if (tempRadius2 > 0.0f && tempPositions[j].m128_f32[1] + 0.5f <= tempRadius2)
+					{
+						//collision add upward motion and geometry squishing
+
+					}
+
+				//	if((XMVector3Dot(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), tempPositions[j]) - XMVector3Dot(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f))).m128_f32[0] >= 0.0f)
+				//	{
+				//		//point ahead or on plane
+
+				//	}
+				//	else
+				//	{
+				//		//point behind plane //will return later here
+				//	}
+				}
+			}
+		}
+	}
+}
+
 //************************************************************
 //************ CREATION OF OBJECTS & RESOURCES ***************
 //************************************************************
@@ -500,7 +555,6 @@ bool DEMO_APP::Run()
 	dContext->ClearRenderTargetView(targetView, color);
 
 	Renderer::Render(&Set);
-
 	swapChain->Present(0, 0);
 
 	return true;
