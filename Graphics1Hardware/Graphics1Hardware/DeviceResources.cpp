@@ -13,6 +13,8 @@ DeviceResources::~DeviceResources()
 
 void DeviceResources::checkResources()
 {
+	m_d3dContext.Get()->ClearState();
+	m_d3dContext.Get()->Flush();
 	ID3D11Debug *d3dDebug = nullptr;
 	if (SUCCEEDED(m_d3dDevice.Get()->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
 	{
@@ -23,10 +25,13 @@ void DeviceResources::checkResources()
 
 void DeviceResources::cleanup()
 {
-	m_d3dContext.Reset();
 	m_swapChain.Reset();
 	m_d3dRenderTargetView.Reset();
 	m_d3dDepthStencilView.Reset();
+
+	m_d3dContext.Get()->ClearState();
+	m_d3dContext.Get()->Flush();
+	m_d3dContext.Reset();
 
 	ID3D11Debug *d3dDebug = nullptr;
 	if (SUCCEEDED(m_d3dDevice.Get()->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
