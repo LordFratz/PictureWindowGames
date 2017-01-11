@@ -105,17 +105,17 @@ public:
 		float cameraRotateSpeed = 5.0f * cameraSpeed;
 		GetCursorPos(&currCursor);
 		if (GetAsyncKeyState(87))
-			viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, -cameraSpeed), viewMatrix);
+			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, 0.0f, cameraSpeed));
 		if (GetAsyncKeyState(83))
-			viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, cameraSpeed), viewMatrix);
+			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, 0.0f, -cameraSpeed));
 		if (GetAsyncKeyState(65))
-			viewMatrix = XMMatrixMultiply(XMMatrixTranslation(-cameraSpeed, 0.0f, 0.0f), viewMatrix);
+			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(cameraSpeed, 0.0f, 0.0f));
 		if (GetAsyncKeyState(68))
-			viewMatrix = XMMatrixMultiply(XMMatrixTranslation(cameraSpeed, 0.0f, 0.0f), viewMatrix);
+			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(-cameraSpeed, 0.0f, 0.0f));
 		if (GetAsyncKeyState(67))
-			viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, cameraSpeed, 0.0f), viewMatrix);
+			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, cameraSpeed, 0.0f));
 		if (GetAsyncKeyState(88))
-			viewMatrix = XMMatrixMultiply(XMMatrixTranslation(0.0f, -cameraSpeed, 0.0f), viewMatrix);
+			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, -cameraSpeed, 0.0f));
 
 		if (GetAsyncKeyState(2))
 		{
@@ -466,7 +466,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	planeMesh->MeshData.push_back(Buffer3);
 
 	//Light initializations
-	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
 
