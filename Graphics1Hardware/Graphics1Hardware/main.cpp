@@ -220,7 +220,7 @@ namespace
 	void CleanupPlaneContext(std::vector<void*> toClean)
 	{
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
-		ContextSubresource1->ReleaseAndGetAddressOf();
+		ContextSubresource1->Reset();
 	}
 
 	/// <summary>
@@ -240,6 +240,14 @@ namespace
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+	void CleanupPlaneShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->Reset();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->Reset();
 	}
 
 	/// <summary>
@@ -282,13 +290,13 @@ namespace
 	void CleanupTexturedShape(std::vector<void*> toClean)
 	{
 		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
-		ShapeSubresource1->ReleaseAndGetAddressOf();
+		ShapeSubresource1->Reset();
 		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
-		ShapeSubresource2->ReleaseAndGetAddressOf();
+		ShapeSubresource2->Reset();
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)toClean[2];
-		Sampler->ReleaseAndGetAddressOf();
+		Sampler->Reset();
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
-		Texture->ReleaseAndGetAddressOf();
+		Texture->Reset();
 	}
 }
 
@@ -343,7 +351,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #if 1
 	//Start Plane Init
 	planeContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
-	planeMesh = new RenderMesh(CleanupTexturedShape);
+	planeMesh = new RenderMesh(CleanupPlaneShape);
 	XMFLOAT4X4 mat;
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
 	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), PlaneShape);
@@ -462,10 +470,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	}
 	delete TempIndexBuffer;
 
-	ModelContext = new RenderContext(devResources, TexturedContext, false);
-	ModelMesh = new RenderMesh(CleanupTexturedShape);
+	//ModelContext = new RenderContext(devResources, TexturedContext, CleanupPlaneContext false);
+	ModelMesh = new RenderMesh(CleanupPlaneShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), PlaneShape);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), PlaneShape);
 
 	BufferData = { 0 };
 	BufferData.pSysMem = IndexBuffer;
@@ -490,11 +498,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer10);
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
-	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
-	ModelContext->ContextData.push_back(Buffer12);
-
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	//auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	//Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
+	//ModelContext->ContextData.push_back(Buffer12);
 	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	//static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
@@ -554,6 +561,7 @@ bool DEMO_APP::ShutDown()
 	delete planeContext;
 	delete planeShape;
 	delete planeMesh;
+	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
 }

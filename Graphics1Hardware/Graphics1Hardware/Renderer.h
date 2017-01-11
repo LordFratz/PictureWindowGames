@@ -85,6 +85,9 @@ public:
 	}
 	~RenderContext()
 	{
+		m_vertexShader.Reset();
+		m_pixelShader.Reset();
+		m_inputLayout.Reset();
 		cFunc(ContextData);
 	}
 };
@@ -102,6 +105,7 @@ public:
 	}
 	~RenderMesh()
 	{
+		m_indexBuffer.Reset();
 		cFunc(MeshData);
 	}
 };
