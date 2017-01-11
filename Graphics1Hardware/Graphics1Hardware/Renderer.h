@@ -29,7 +29,7 @@ class KdTree
 	//Better idea?
 };
 //</temp>
-typedef void(*CleanupFunc)();
+typedef void(*CleanupFunc)(std::vector<void*> toClean);
 
 //typedef void (*RenderFunc)(RenderNode &rNode);
 
@@ -74,19 +74,18 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
 	std::vector<void*> ContextData;
+	CleanupFunc cFunc;
 
-	RenderContext(std::shared_ptr<DeviceResources> deviceResources, void(*Func)(RenderNode &rNode), bool IsTransparent) : RenderNode(Func)
+	RenderContext(std::shared_ptr<DeviceResources> deviceResources, void(*Func)(RenderNode &rNode), CleanupFunc CFunc, bool IsTransparent) : RenderNode(Func)
 	{
+		cFunc = CFunc;
 		next = nullptr;
 		isTransparent = IsTransparent;
 		m_deviceResources = deviceResources;
 	}
 	~RenderContext()
 	{
-		for(size_t i = 0; i < ContextData.size(); i++)
-		{
-			delete ContextData[i];
-		}
+		cFunc(ContextData);
 	}
 };
 
@@ -95,13 +94,15 @@ class RenderMesh
 public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer>	m_indexBuffer;
 	unsigned int m_indexCount;
-	std::vector<void*> MeshData;;
+	std::vector<void*> MeshData;
+	CleanupFunc cFunc;
+	RenderMesh(CleanupFunc CFunc)
+	{
+		cFunc = CFunc;
+	}
 	~RenderMesh()
 	{
-		for(size_t i = 0; i < MeshData.size(); i++)
-		{
-			delete MeshData[i];
-		}
+		cFunc(MeshData);
 	}
 };
 

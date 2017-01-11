@@ -217,6 +217,12 @@ namespace
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
 	}
 
+	void CleanupPlaneContext(std::vector<void*> toClean)
+	{
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ContextSubresource1->ReleaseAndGetAddressOf();
+	}
+
 	/// <summary>
 	/// Generic TEXTURELESS RenderShape Function
 	/// </summary>
@@ -271,7 +277,18 @@ namespace
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
 
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
 
+	void CleanupTexturedShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->ReleaseAndGetAddressOf();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->ReleaseAndGetAddressOf();
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)toClean[2];
+		Sampler->ReleaseAndGetAddressOf();
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
+		Texture->ReleaseAndGetAddressOf();
 	}
 }
 
@@ -325,8 +342,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 #if 1
 	//Start Plane Init
-	planeContext = new RenderContext(devResources, PlaneContext, false);
-	planeMesh = new RenderMesh();
+	planeContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	planeMesh = new RenderMesh(CleanupTexturedShape);
 	XMFLOAT4X4 mat;
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
 	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), PlaneShape);
@@ -446,7 +463,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	delete TempIndexBuffer;
 
 	ModelContext = new RenderContext(devResources, TexturedContext, false);
-	ModelMesh = new RenderMesh();
+	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), PlaneShape);
 
