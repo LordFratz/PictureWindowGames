@@ -34,6 +34,7 @@ using namespace DirectX;
 #include "BasicLightPixelShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
+#include "DDSTextureLoader.h"
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
 
@@ -140,7 +141,7 @@ public:
 };
 
 static Camera* CurrCamera;
-
+static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -215,6 +216,7 @@ namespace
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData,0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->PSSetConstantBuffers(2, 1, LightBuff.GetAddressOf());
 	}
 
 	/// <summary>
@@ -329,7 +331,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	planeMesh = new RenderMesh();
 	XMFLOAT4X4 mat;
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
-	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), PlaneShape);
+	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape);
 
 
 
@@ -393,10 +395,37 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData2.SysMemPitch = 0;
 	BufferData2.SysMemSlicePitch = 0;
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(DirectionalLight), D3D11_BIND_CONSTANT_BUFFER);
-	auto Buffer4 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	Device->CreateBuffer(&constBuffDesc, &BufferData2, Buffer4->GetAddressOf());
+	//auto Buffer4 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, &BufferData2, LightBuff.GetAddressOf());
 	//end light initializations
 
+	auto SampleState = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
+	D3D11_SAMPLER_DESC samplerDesc;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	samplerDesc.BorderColor[0] = 1.0f;
+	samplerDesc.BorderColor[1] = 1.0f;
+	samplerDesc.BorderColor[2] = 1.0f;
+	samplerDesc.BorderColor[3] = 1.0f;
+	samplerDesc.MinLOD = -FLT_MAX;
+	samplerDesc.MaxLOD = FLT_MAX;
+	Device->CreateSamplerState(&samplerDesc, SampleState->GetAddressOf());
+	planeMesh->MeshData.push_back(SampleState);
+
+	auto SRV = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	const size_t size = strlen("../Resources/Plane.dds") + 1;
+	size_t empty;
+	wchar_t* wText = new wchar_t[size];
+	mbstowcs_s(&empty, wText, size_t(size), "../Resources/Plane.dds", size_t(size));
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV->GetAddressOf(), 0);
+	wText = NULL;
+	delete wText;
+	planeMesh->MeshData.push_back(SRV);
 
 	static const unsigned short planeIndices[] =
 	{
@@ -448,7 +477,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext = new RenderContext(devResources, TexturedContext, false);
 	ModelMesh = new RenderMesh();
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), PlaneShape);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), TexturedShape);
 
 	BufferData = { 0 };
 	BufferData.pSysMem = IndexBuffer;
@@ -477,6 +506,19 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
 	ModelContext->ContextData.push_back(Buffer12);
+
+	auto SampleState1 = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
+	Device->CreateSamplerState(&samplerDesc, SampleState1->GetAddressOf());
+	ModelMesh->MeshData.push_back(SampleState1);
+
+	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+	wText = new wchar_t[size1];
+	mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
+	wText = NULL;
+	delete wText;
+	ModelMesh->MeshData.push_back(SRV1);
 
 	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
