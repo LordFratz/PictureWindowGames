@@ -600,6 +600,7 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
+	LightBuff.Reset();
 	devResources->checkResources();
 	delete planeContext;
 	delete planeShape;
