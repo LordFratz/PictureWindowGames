@@ -34,6 +34,7 @@ using namespace DirectX;
 #include "BasicLightPixelShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
+#include "DDSTextureLoader.h"
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
 
@@ -140,7 +141,7 @@ public:
 };
 
 static Camera* CurrCamera;
-
+static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -215,6 +216,13 @@ namespace
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData,0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->PSSetConstantBuffers(2, 1, LightBuff.GetAddressOf());
+	}
+
+	void CleanupPlaneContext(std::vector<void*> toClean)
+	{
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ContextSubresource1->Reset();
 	}
 
 	/// <summary>
@@ -229,11 +237,19 @@ namespace
 		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, &Node->WorldMat, 0, 0);
 		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
-		UINT stride = sizeof(VertexPositionColor);
+		UINT stride = sizeof(VertexPositionUVWNorm);
 		UINT offset = 0;
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+	void CleanupPlaneShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->Reset();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->Reset();
 	}
 
 	/// <summary>
@@ -256,6 +272,33 @@ namespace
 		auto Node = &(RenderShape&)rNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
 
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, &Node->WorldMat, 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(VertexPositionUVWNorm);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
+		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
+		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
+
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+	void CleanupTexturedShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->Reset();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->Reset();
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)toClean[2];
+		Sampler->Reset();
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
+		Texture->Reset();
 	}
 }
 
@@ -364,15 +407,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 #if 1
 	//Start Plane Init
-	planeContext = new RenderContext(devResources, PlaneContext, false);
-	planeMesh = new RenderMesh();
+	planeContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	planeMesh = new RenderMesh(CleanupTexturedShape);
 	XMFLOAT4X4 mat;
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
-	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), PlaneShape);
+	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape);
 
 
 
-#if false //use this section once the plane has UVs, normals, and a texture loaded
+#if true //use this section once the plane has UVs, normals, and a texture loaded
 	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
@@ -405,19 +448,19 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer2->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer2);
 
-	static const VertexPositionColor cubeVertices[] =
+	static const VertexPositionUVWNorm planeVerts[] =
 	{
-		{ XMFLOAT3(-2.5f, -0.5f, -2.5f), XMFLOAT3(0.0f, 0.0f, 0.0f) },
-		{ XMFLOAT3(-2.5f, -0.5f,  2.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(2.5f, -0.5f, -2.5f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-		{ XMFLOAT3(2.5f, -0.5f,  2.5f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
+		{ XMFLOAT4(-2.5f, -0.5f, -2.5f, 0.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT4(-2.5f, -0.5f,  2.5f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT4(2.5f, -0.5f, -2.5f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT4(2.5f, -0.5f,  2.5f, 0.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f) }
 	};
 
 	D3D11_SUBRESOURCE_DATA BufferData = { 0 };
-	BufferData.pSysMem = cubeVertices;
+	BufferData.pSysMem = planeVerts;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeVertices), D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(planeVerts), D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer3 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer3->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer3);
@@ -432,23 +475,50 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData2.SysMemPitch = 0;
 	BufferData2.SysMemSlicePitch = 0;
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(DirectionalLight), D3D11_BIND_CONSTANT_BUFFER);
-	auto Buffer4 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	Device->CreateBuffer(&constBuffDesc, &BufferData2, Buffer4->GetAddressOf());
+	//auto Buffer4 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, &BufferData2, LightBuff.GetAddressOf());
 	//end light initializations
 
+	auto SampleState = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
+	D3D11_SAMPLER_DESC samplerDesc;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	samplerDesc.BorderColor[0] = 1.0f;
+	samplerDesc.BorderColor[1] = 1.0f;
+	samplerDesc.BorderColor[2] = 1.0f;
+	samplerDesc.BorderColor[3] = 1.0f;
+	samplerDesc.MinLOD = -FLT_MAX;
+	samplerDesc.MaxLOD = FLT_MAX;
+	Device->CreateSamplerState(&samplerDesc, SampleState->GetAddressOf());
+	planeMesh->MeshData.push_back(SampleState);
 
-	static const unsigned short cubeIndices[] =
+	auto SRV = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	const size_t size = strlen("../Resources/Plane.dds") + 1;
+	size_t empty;
+	wchar_t* wText = new wchar_t[size];
+	mbstowcs_s(&empty, wText, size_t(size), "../Resources/Plane.dds", size_t(size));
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV->GetAddressOf(), 0);
+	wText = NULL;
+	delete wText;
+	planeMesh->MeshData.push_back(SRV);
+
+	static const unsigned short planeIndices[] =
 	{
 		0,2,1, // -x
 		1,2,3,
 	};
 
-	planeMesh->m_indexCount = ARRAYSIZE(cubeIndices);
+	planeMesh->m_indexCount = ARRAYSIZE(planeIndices);
 	BufferData = { 0 };
-	BufferData.pSysMem = cubeIndices;
+	BufferData.pSysMem = planeIndices;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(planeIndices), D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
 #endif
@@ -463,10 +533,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	int numVerts = whatever::GetVertCount();
 	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
-	int* IndexBuffer = whatever::GetInd();
+	int* TempIndexBuffer = whatever::GetInd();
 	float* UVs = whatever::GetUVs();
 	float* Norms = whatever::GetNormals();
 	float* Verts = whatever::GetVerts();
+	int numIndices = whatever::GetIndCount();
 	for (int i = 0; i < numVerts; i++)
 	{
 		VertexPositionUVWNorm Temp;
@@ -474,19 +545,26 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.UVW = XMFLOAT4(UVs[i*2], UVs[i*2+1], 0, 0);
 		Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
 		VertexBuffer[i] = Temp;
+		int j = 0;
 	}
+	short* IndexBuffer = new short[numIndices];
+	for(int i = 0; i < numIndices; i++)
+	{
+		IndexBuffer[i] = (short)TempIndexBuffer[i];
+	}
+	delete TempIndexBuffer;
 
-
-	ModelContext = new RenderContext(devResources, TexturedContext, false);
-	ModelMesh = new RenderMesh();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), TexturedShape);
+	//ModelContext = new RenderContext(devResources, TexturedContext, CleanupPlaneContext false);
+	ModelMesh = new RenderMesh(CleanupTexturedShape);
+	ModelMesh->m_indexCount = whatever::GetIndCount();
+	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), TexturedShape);
 
 	BufferData = { 0 };
 	BufferData.pSysMem = IndexBuffer;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(IndexBuffer), D3D11_BIND_INDEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * ModelMesh->m_indexCount, D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, ModelShape->Mesh.m_indexBuffer.GetAddressOf());;
 
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER);
@@ -499,16 +577,27 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexBuffer), D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer10);
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
-	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
-	ModelContext->ContextData.push_back(Buffer12);
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	//auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	//Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
+	//ModelContext->ContextData.push_back(Buffer12);
+	auto SampleState1 = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
+	Device->CreateSamplerState(&samplerDesc, SampleState1->GetAddressOf());
+	ModelMesh->MeshData.push_back(SampleState1);
 
+	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+	wText = new wchar_t[size1];
+	mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
+	wText = NULL;
+	delete wText;
+	ModelMesh->MeshData.push_back(SRV1);
 
 	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
@@ -524,7 +613,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 	planeContext->AddChild(planeShape);
-	planeContext->AddChild(ModelContext);
 	planeContext->AddChild(ModelShape);
 	Set = RenderSet();
 	Set.SetHead(planeContext);
@@ -566,9 +654,14 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
+	LightBuff.Reset();
+	devResources->checkResources();
 	delete planeContext;
 	delete planeShape;
 	delete planeMesh;
+	delete ModelShape;
+	delete ModelMesh;
+	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
 }

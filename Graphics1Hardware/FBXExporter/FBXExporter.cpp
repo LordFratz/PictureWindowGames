@@ -22,29 +22,28 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, char* OutputName) 
 	Importer->Destroy();
 	FbxNode* RootNode = Scene->GetRootNode();
 	ExportFBX(RootNode);
+	ConvertToDirectX();
+	Scene->Destroy();
 }
 
 void FBXExporter::FBXExport::ConvertToDirectX()
 {
 	//Vertexs
-	for (int i = 0; i < Verts.size(); i++) {
-		Verts[i].pos[2] = -Verts[i].pos[2];
-		Normals[i].pos[2] = -Normals[i].pos[2];
-	}
+	//for (int i = 0; i < Verts.size(); i++) {
+	//	Verts[i].pos[2] = -Verts[i].pos[2];
+	//}
 	//Normals, Binormals, tangents
-	for (int i = 0; i < Normals.size(); i++) {
-		Normals[i].pos[2] = -Normals[i].pos[2];
-	}
-	//UVs
-	for (int i = 0; i < UVs.size(); i++) {
-		UVs[i].pos[1] = 1.0f - UVs[i].pos[1];
-	}
+	//for (int i = 0; i < Normals.size(); i++) {
+	//	if (Normals[i].pos[0] != 0) {
+	//		Normals[i].pos[2] = -Normals[i].pos[2];
+	//	}
+	//}
 	//Vertex Triangle Order
-	for (int i = 0; i < Indecies.size(); i += 3) {
-		int temp = Indecies[i + 1];
-		Indecies[i + 1] = Indecies[i + 2];
-		Indecies[i + 2] = temp;
-	}
+	//for (int i = 0; i < Indecies.size(); i += 3) {
+	//	int temp = Indecies[i + 1];
+	//	Indecies[i + 1] = Indecies[i + 2];
+	//	Indecies[i + 2] = temp;
+	//}
 	//change matrixes in bones
 	for (int i = 0; i < Skeleton.size(); i++) {
 		FbxVector4 translation = Skeleton[i].bindPoseMatrix.GetT();
@@ -55,7 +54,7 @@ void FBXExporter::FBXExport::ConvertToDirectX()
 		Skeleton[i].bindPoseMatrix.SetR(rotation);
 	}
 }
-
+#include <map>
 void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 {
 	if (NodeThing->GetNodeAttribute() != NULL && NodeThing->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMesh) {
@@ -64,43 +63,62 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 		FbxVector4* tempverts = Mesh->GetControlPoints();
 		FbxGeometryElementUV* Euvs = Mesh->GetElementUV();
 		FbxArray<FbxVector2> tempUVs;
+		FbxArray<FbxVector4> tempNorms;
+		Mesh->GetPolygonVertexNormals(tempNorms);
 		Mesh->GetPolygonVertexUVs(Euvs->GetName(), tempUVs);
 		int spot = 0;
+		std::map<int, FBXExport::Vertex> UVInds = std::map<int, FBXExport::Vertex>();
+		std::vector<int> UVIndOrder = std::vector<int>();
+		Vertex* uvthing = new Vertex[Mesh->GetPolygonCount() * 3];
+
 		for (int e = 0; e < Mesh->GetPolygonCount(); e++) {
 			int NumV = Mesh->GetPolygonSize(e);
 			if (NumV == 3) {
 				for (int j = 0; j < NumV; j++) {
 					int CPIndex = Mesh->GetPolygonVertex(e, j);
-					Indecies.push_back(CPIndex);
-					if (spot > CPIndex) {
-						continue;
-					}
+					Indecies.push_back(spot);
 					spot++;
-					FbxVector4 tempNormal;
-					Mesh->GetPolygonVertexNormal(j, CPIndex, tempNormal);
-					int UVIndex = Mesh->GetTextureUVIndex(e, j);
 					Vertex vert;
 					Vertex newNormal;
 					Vertex newUV;
 
+					int UVIndex = Mesh->GetTextureUVIndex(e, j);
+					FbxVector2 crud = tempUVs.GetAt(UVIndex);
+
 					vert.pos[0] = (float)tempverts[CPIndex].mData[0];
 					vert.pos[1] = (float)tempverts[CPIndex].mData[1];
-					vert.pos[2] = (float)tempverts[CPIndex].mData[2];
-					vert.pos[3] = 1;
+					vert.pos[2] = -(float)tempverts[CPIndex].mData[2];
+					vert.pos[3] = (float)tempverts[CPIndex].mData[3];
 
-					newNormal.pos[0] = (float)tempNormal.mData[0];
-					newNormal.pos[1] = (float)tempNormal.mData[1];
-					newNormal.pos[2] = (float)tempNormal.mData[2];
-					newNormal.pos[3] = 1;
+					newNormal.pos[0] = (float)tempNorms[e * 3 + j].mData[0];
+					newNormal.pos[1] = (float)tempNorms[e * 3 + j].mData[1];
+					newNormal.pos[2] = -(float)tempNorms[e * 3 + j].mData[2];
+					newNormal.pos[3] = (float)tempNorms[e * 3 + j].mData[3];
 
-					newUV.pos[0] = (float)tempUVs[UVIndex].mData[0];
-					newUV.pos[1] = (float)tempUVs[UVIndex].mData[1];
+					newUV.pos[0] = 1.0f - (float)crud.mData[0];
+					newUV.pos[1] = 1.0f - (float)crud.mData[1];
+					//newUV.pos[0] = 1.0f - (float)tempUVs.GetAt(spot).mData[0];
+					//newUV.pos[1] = 1.0f - (float)tempUVs.GetAt(spot).mData[1];
 
-					Verts.push_back(vert);
 					Normals.push_back(newNormal);
-					UVs.push_back(newUV);
+
+					//if (uvthing[UVIndex].pos[0] == newUV.pos[0] && uvthing[UVIndex].pos[1] == newUV.pos[1]) {
+					//
+					//}
+					//else {
+					//	uvthing[UVIndex] = newUV;
+					//}
+
+					uvthing[UVIndex] = newUV;
+
+					UVInds[UVIndex] = newUV;
+					UVIndOrder.push_back(UVIndex);
+					Verts.push_back(vert);
 				}
 			}
+		}
+		for (int i = 0; i < Mesh->GetPolygonCount() * 3; i++) {
+			UVs.push_back(uvthing[i]);
 		}
 		//Load Keyframes - the data on translation, rotation, and scaling for each keyframe of animation
 		//FbxAnimStack* currAnimStack = Scene->GetSrcObject<FbxAnimStack>(0);

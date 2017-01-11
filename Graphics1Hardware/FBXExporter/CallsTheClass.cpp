@@ -110,6 +110,16 @@ int whatever::GetVertCount()
 	return MyExporter.Verts.size();
 }
 
+int whatever::GetNormalCount()
+{
+	return MyExporter.Normals.size();
+}
+
+int whatever::GetUVCount()
+{
+	return MyExporter.UVs.size();
+}
+
 int whatever::GetIndCount()
 {
 	return MyExporter.Indecies.size();
