@@ -8,6 +8,7 @@ extern "C" {
 		EXPORT float* GetVerts();
 		EXPORT float* GetNormals();
 		EXPORT float* GetUVs();
+		EXPORT short* GetShortInd();
 		EXPORT int* GetInd();
 		EXPORT float** GetBoneBindMat();
 		EXPORT int** GetBoneVertInds();

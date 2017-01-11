@@ -44,6 +44,15 @@ float* whatever::GetUVs()
 	return UV;
 }
 
+short* whatever::GetShortInd()
+{
+	short* Ind = new short[MyExporter.Indecies.size()];
+	for (int i = 0; i < MyExporter.Indecies.size(); i++) {
+		Ind[i] = MyExporter.Indecies[i];
+	}
+	return Ind;
+}
+
 int* whatever::GetInd()
 {
 	int* Ind = new int[MyExporter.Indecies.size()];
@@ -107,31 +116,31 @@ int * whatever::GetParentInds()
 
 int whatever::GetVertCount()
 {
-	return MyExporter.Verts.size();
+	return (int)MyExporter.Verts.size();
 }
 
 int whatever::GetNormalCount()
 {
-	return MyExporter.Normals.size();
+	return (int)MyExporter.Normals.size();
 }
 
 int whatever::GetUVCount()
 {
-	return MyExporter.UVs.size();
+	return (int)MyExporter.UVs.size();
 }
 
 int whatever::GetIndCount()
 {
-	return MyExporter.Indecies.size();
+	return (int)MyExporter.Indecies.size();
 }
 
 int* whatever::GetBoneCounts()
 {
 	int* Bonethang = new int[MyExporter.Skeleton.size() * 2 + 1];
-	Bonethang[0] = MyExporter.Skeleton.size();
+	Bonethang[0] = (int)MyExporter.Skeleton.size();
 	for (int i = 0; i < MyExporter.Skeleton.size(); i++) {
-		Bonethang[1 + (i * 2 + 0)] = MyExporter.Skeleton[i].BoneVertInds.size();
-		Bonethang[1 + (i * 2 + 1)] = MyExporter.Skeleton[i].BoneWeights.size();
+		Bonethang[1 + (i * 2 + 0)] = (int)MyExporter.Skeleton[i].BoneVertInds.size();
+		Bonethang[1 + (i * 2 + 1)] = (int)MyExporter.Skeleton[i].BoneWeights.size();
 	}
 	return Bonethang;
 }

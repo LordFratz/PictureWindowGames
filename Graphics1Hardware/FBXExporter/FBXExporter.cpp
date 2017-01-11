@@ -24,6 +24,7 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, char* OutputName) 
 	ExportFBX(RootNode);
 	ConvertToDirectX();
 	Scene->Destroy();
+	SdkManager->Destroy();
 }
 
 void FBXExporter::FBXExport::ConvertToDirectX()
@@ -168,6 +169,6 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 	}
 	for (int i = 0; i < NodeThing->GetChildCount(); i++) {
 		FbxNode* ChildNode = NodeThing->GetChild(i);
-		ExportFBX(ChildNode, Skeleton.size() - 1);
+		ExportFBX(ChildNode, (int)Skeleton.size() - 1);
 	}
 }
