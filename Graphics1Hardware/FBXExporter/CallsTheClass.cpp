@@ -24,7 +24,7 @@ float* whatever::GetVerts()
 
 float* whatever::GetNormals()
 {
-	float* N = new float[MyExporter.Normals.size()];
+	float* N = new float[MyExporter.Normals.size() * 4];
 	for (int i = 0; i < MyExporter.Normals.size(); i++) {
 		N[i * 4 + 0] = MyExporter.Normals[i].pos[0];
 		N[i * 4 + 1] = MyExporter.Normals[i].pos[1];
