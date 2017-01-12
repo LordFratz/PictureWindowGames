@@ -63,14 +63,16 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 		//gets all the vertexes, normals, and uvs
 		FbxVector4* tempverts = Mesh->GetControlPoints();
 		FbxGeometryElementUV* Euvs = Mesh->GetElementUV();
-		FbxArray<FbxVector2> tempUVs;
+		//FbxArray<FbxVector2> tempUVs;
+		FbxLayerElementArrayTemplate<FbxVector2>* tempUVs = 0;
 		FbxArray<FbxVector4> tempNorms;
 		Mesh->GetPolygonVertexNormals(tempNorms);
-		Mesh->GetPolygonVertexUVs(Euvs->GetName(), tempUVs);
+		//Mesh->GetPolygonVertexUVs(Euvs->GetName(), tempUVs)
+		Mesh->GetTextureUV(&tempUVs, FbxLayerElement::eTextureDiffuse);
 		int spot = 0;
-		std::map<int, FBXExport::Vertex> UVInds = std::map<int, FBXExport::Vertex>();
-		std::vector<int> UVIndOrder = std::vector<int>();
-		Vertex* uvthing = new Vertex[Mesh->GetPolygonCount() * 3];
+		//std::map<int, FBXExport::Vertex> UVInds = std::map<int, FBXExport::Vertex>();
+		//std::vector<int> UVIndOrder = std::vector<int>();
+		//Vertex* uvthing = new Vertex[Mesh->GetPolygonCount() * 3];
 
 		for (int e = 0; e < Mesh->GetPolygonCount(); e++) {
 			int NumV = Mesh->GetPolygonSize(e);
@@ -84,7 +86,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 					Vertex newUV;
 
 					int UVIndex = Mesh->GetTextureUVIndex(e, j);
-					FbxVector2 crud = tempUVs.GetAt(UVIndex);
+					FbxVector2 crud = tempUVs->GetAt(UVIndex);
 
 					vert.pos[0] = (float)tempverts[CPIndex].mData[0];
 					vert.pos[1] = (float)tempverts[CPIndex].mData[1];
@@ -96,7 +98,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 					newNormal.pos[2] = -(float)tempNorms[e * 3 + j].mData[2];
 					newNormal.pos[3] = (float)tempNorms[e * 3 + j].mData[3];
 
-					newUV.pos[0] = 1.0f - (float)crud.mData[0];
+					newUV.pos[0] = 1.0f - (float)crud.mData[0] - 0.5f;
 					newUV.pos[1] = 1.0f - (float)crud.mData[1];
 					//newUV.pos[0] = 1.0f - (float)tempUVs.GetAt(spot).mData[0];
 					//newUV.pos[1] = 1.0f - (float)tempUVs.GetAt(spot).mData[1];
@@ -109,18 +111,18 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 					//else {
 					//	uvthing[UVIndex] = newUV;
 					//}
+					UVs.push_back(newUV);
+					//uvthing[UVIndex] = newUV;
 
-					uvthing[UVIndex] = newUV;
-
-					UVInds[UVIndex] = newUV;
-					UVIndOrder.push_back(UVIndex);
+					//UVInds[UVIndex] = newUV;
+					//UVIndOrder.push_back(UVIndex);
 					Verts.push_back(vert);
 				}
 			}
 		}
-		for (int i = 0; i < Mesh->GetPolygonCount() * 3; i++) {
-			UVs.push_back(uvthing[i]);
-		}
+		//for (int i = 0; i < Mesh->GetPolygonCount() * 3; i++) {
+		//	//UVs.push_back(uvthing[i]);
+		//}
 		//Load Keyframes - the data on translation, rotation, and scaling for each keyframe of animation
 		//FbxAnimStack* currAnimStack = Scene->GetSrcObject<FbxAnimStack>(0);
 		//FbxString animStackName = currAnimStack->GetName();

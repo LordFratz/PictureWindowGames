@@ -73,11 +73,11 @@ public:
 	ViewProj cameraData;
 	void init(int sWidth, int sHeight)
 	{
-		static const XMVECTORF32 eye = { 0.0f, 0.0f, -1.5f, 0.0f };
+		static const XMVECTORF32 eye = { 0.0f, 0.0f, -10.0f, 0.0f };
 		static const XMVECTORF32 at = { 0.0f, 0.0f, 0.0f, 0.0f };
 		static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
-		viewMatrix = XMMatrixInverse(0, XMMatrixLookAtRH(eye, at, up));
+		viewMatrix = XMMatrixInverse(0, XMMatrixLookAtLH(eye, at, up));
 		XMStoreFloat4x4(&cameraData.view, XMMatrixTranspose(viewMatrix));
 		XMStoreFloat4(&cameraData.cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
 		float aspectRatio = float(sWidth) / float(sHeight);
