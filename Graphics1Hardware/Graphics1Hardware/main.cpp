@@ -327,7 +327,7 @@ namespace Collisions
 					if (tempRadius2 > 0.0f && XMVector3Dot(tempPositions[i] - tempPositions[j], tempPositions[i] - tempPositions[j]).m128_f32[0] <= (tempRadius + tempRadius2) * (tempRadius + tempRadius2))
 					{
 						//collision! //add or trigger motion reaction and geometry deformation //will return to this later
-					}					
+					}
 				}
 			}
 			else if (tempRadius == 0.0f)
@@ -533,7 +533,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	int numVerts = whatever::GetVertCount();
 	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
-	int* TempIndexBuffer = whatever::GetInd();
+	short* IndexBuffer = whatever::GetShortInd();
 	float* UVs = whatever::GetUVs();
 	float* Norms = whatever::GetNormals();
 	float* Verts = whatever::GetVerts();
@@ -547,17 +547,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		VertexBuffer[i] = Temp;
 		int j = 0;
 	}
-	short* IndexBuffer = new short[numIndices];
-	for(int i = 0; i < numIndices; i++)
-	{
-		IndexBuffer[i] = (short)TempIndexBuffer[i];
-	}
-	delete TempIndexBuffer;
 
 	//ModelContext = new RenderContext(devResources, TexturedContext, CleanupPlaneContext false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
 	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), TexturedShape);
+
+	ModelMesh->m_indexCount = numIndices;
 
 	BufferData = { 0 };
 	BufferData.pSysMem = IndexBuffer;
