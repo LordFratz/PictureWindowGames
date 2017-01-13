@@ -357,6 +357,61 @@ namespace Collisions
 	}
 }
 
+namespace GenerateObject
+{
+	void CreateD20(VertexPositionUVWNorm* Mesh, int* Ind) {
+		//generate Verticies for D20
+		float t = (1.0f + sqrt(5.0f)) / 2.0f;
+		Mesh = new VertexPositionUVWNorm[12];
+		Mesh[0].pos = XMFLOAT4(-1, t, 0, 1);
+		Mesh[1].pos = XMFLOAT4(1, t, 0, 1);
+		Mesh[2].pos = XMFLOAT4(-1, -t, 0, 1);
+		Mesh[3].pos = XMFLOAT4(1, -t, 0, 1);
+
+		Mesh[4].pos = XMFLOAT4(0, -1, t, 1);
+		Mesh[5].pos = XMFLOAT4(0, 1, t, 1);
+		Mesh[6].pos = XMFLOAT4(0, -1, -t, 1);
+		Mesh[7].pos = XMFLOAT4(0, 1, -t, 1);
+
+		Mesh[8].pos = XMFLOAT4(t, 0, -1, 1);
+		Mesh[9].pos = XMFLOAT4(t, 0, 1, 1);
+		Mesh[10].pos = XMFLOAT4(-t, 0, -1, 1);
+		Mesh[11].pos = XMFLOAT4(-t, 0, 1, 1);
+
+		for (int i = 0; i < 12; i++) {
+			float length = sqrt((Mesh[i].pos.x * Mesh[i].pos.x) + (Mesh[i].pos.y * Mesh[i].pos.y) + (Mesh[i].pos.z * Mesh[i].pos.z));
+			Mesh[i].pos.x = Mesh[i].pos.x / length;
+			Mesh[i].pos.y = Mesh[i].pos.y / length;
+			Mesh[i].pos.z = Mesh[i].pos.z / length;
+		}
+
+		Ind = new int[60];
+		Ind[0]  = 0; Ind[1]  = 11; Ind[2]  = 5;
+		Ind[3]  = 0; Ind[4]  = 5; Ind[5]  = 1;
+		Ind[6]  = 0; Ind[7]  = 1; Ind[8]  = 7;
+		Ind[9]  = 0; Ind[10] = 7; Ind[11] = 10;
+		Ind[12] = 0; Ind[13] = 10; Ind[14] = 11;
+
+		Ind[15] = 1; Ind[16] = 5; Ind[17] = 9;
+		Ind[18] = 5; Ind[19] = 11; Ind[20] = 4;
+		Ind[21] = 11; Ind[22] = 10; Ind[23] = 2;
+		Ind[24] = 10; Ind[25] = 7; Ind[26] = 6;
+		Ind[27] = 7; Ind[28] = 1; Ind[29] = 8;
+
+		Ind[30] = 3; Ind[31] = 9; Ind[32] = 4;
+		Ind[33] = 3; Ind[34] = 4; Ind[35] = 2;
+		Ind[36] = 3; Ind[37] = 2; Ind[38] = 6;
+		Ind[39] = 3; Ind[40] = 6; Ind[41] = 8;
+		Ind[42] = 3; Ind[43] = 8; Ind[44] = 9;
+
+		Ind[45] = 4; Ind[46] = 9; Ind[47] = 5;
+		Ind[48] = 2; Ind[49] = 4; Ind[50] = 11;
+		Ind[51] = 6; Ind[52] = 2; Ind[53] = 10;
+		Ind[54] = 8; Ind[55] = 6; Ind[56] = 7;
+		Ind[57] = 9; Ind[58] = 8; Ind[59] = 1;
+	}
+}
+
 //************************************************************
 //************ CREATION OF OBJECTS & RESOURCES ***************
 //************************************************************

@@ -19,5 +19,7 @@ extern "C" {
 		EXPORT int GetUVCount();
 		EXPORT int GetIndCount();
 		EXPORT int* GetBoneCounts();
+		EXPORT int GetKeyFrameCount();
+		EXPORT float** GetBoneAnimationKeyFrames();
 	}
 };

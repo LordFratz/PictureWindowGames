@@ -22,40 +22,22 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, char* OutputName) 
 	Importer->Destroy();
 	FbxNode* RootNode = Scene->GetRootNode();
 	ExportFBX(RootNode);
-	ConvertToDirectX();
 	Scene->Destroy();
 	SdkManager->Destroy();
 }
 
-void FBXExporter::FBXExport::ConvertToDirectX()
+FbxAMatrix FBXExporter::FBXExport::ConvertToDirectX(FbxAMatrix mat)
 {
-	//Vertexs
-	//for (int i = 0; i < Verts.size(); i++) {
-	//	Verts[i].pos[2] = -Verts[i].pos[2];
-	//}
-	//Normals, Binormals, tangents
-	//for (int i = 0; i < Normals.size(); i++) {
-	//	if (Normals[i].pos[0] != 0) {
-	//		Normals[i].pos[2] = -Normals[i].pos[2];
-	//	}
-	//}
-	//Vertex Triangle Order
-	//for (int i = 0; i < Indecies.size(); i += 3) {
-	//	int temp = Indecies[i + 1];
-	//	Indecies[i + 1] = Indecies[i + 2];
-	//	Indecies[i + 2] = temp;
-	//}
-	//change matrixes in bones
-	for (int i = 0; i < Skeleton.size(); i++) {
-		FbxVector4 translation = Skeleton[i].bindPoseMatrix.GetT();
-		FbxVector4 rotation = Skeleton[i].bindPoseMatrix.GetR();
-		translation.Set(translation.mData[0], translation.mData[1], -translation.mData[2]);
-		rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
-		Skeleton[i].bindPoseMatrix.SetT(translation);
-		Skeleton[i].bindPoseMatrix.SetR(rotation);
-	}
+	//change matrixes in to be DirectX compatible (might be wrong who knows)
+	FbxVector4 translation = mat.GetT();
+	FbxVector4 rotation = mat.GetR();
+	translation.Set(translation.mData[0], translation.mData[1], -translation.mData[2]);
+	rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
+	mat.SetT(translation);
+	mat.SetR(rotation);
+	return mat;
 }
-#include <map>
+
 void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 {
 	if (NodeThing->GetNodeAttribute() != NULL && NodeThing->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMesh) {
@@ -63,16 +45,11 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 		//gets all the vertexes, normals, and uvs
 		FbxVector4* tempverts = Mesh->GetControlPoints();
 		FbxGeometryElementUV* Euvs = Mesh->GetElementUV();
-		//FbxArray<FbxVector2> tempUVs;
 		FbxLayerElementArrayTemplate<FbxVector2>* tempUVs = 0;
 		FbxArray<FbxVector4> tempNorms;
 		Mesh->GetPolygonVertexNormals(tempNorms);
-		//Mesh->GetPolygonVertexUVs(Euvs->GetName(), tempUVs)
 		Mesh->GetTextureUV(&tempUVs, FbxLayerElement::eTextureDiffuse);
 		int spot = 0;
-		//std::map<int, FBXExport::Vertex> UVInds = std::map<int, FBXExport::Vertex>();
-		//std::vector<int> UVIndOrder = std::vector<int>();
-		//Vertex* uvthing = new Vertex[Mesh->GetPolygonCount() * 3];
 
 		for (int e = 0; e < Mesh->GetPolygonCount(); e++) {
 			int NumV = Mesh->GetPolygonSize(e);
@@ -100,55 +77,16 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 
 					newUV.pos[0] = 1.0f - (float)crud.mData[0] - 0.5f;
 					newUV.pos[1] = 1.0f - (float)crud.mData[1];
-					//newUV.pos[0] = 1.0f - (float)tempUVs.GetAt(spot).mData[0];
-					//newUV.pos[1] = 1.0f - (float)tempUVs.GetAt(spot).mData[1];
 
 					Normals.push_back(newNormal);
-
-					//if (uvthing[UVIndex].pos[0] == newUV.pos[0] && uvthing[UVIndex].pos[1] == newUV.pos[1]) {
-					//
-					//}
-					//else {
-					//	uvthing[UVIndex] = newUV;
-					//}
 					UVs.push_back(newUV);
-					//uvthing[UVIndex] = newUV;
-
-					//UVInds[UVIndex] = newUV;
-					//UVIndOrder.push_back(UVIndex);
 					Verts.push_back(vert);
 				}
 			}
 		}
-		//for (int i = 0; i < Mesh->GetPolygonCount() * 3; i++) {
-		//	//UVs.push_back(uvthing[i]);
-		//}
-		//Load Keyframes - the data on translation, rotation, and scaling for each keyframe of animation
-		//FbxAnimStack* currAnimStack = Scene->GetSrcObject<FbxAnimStack>(0);
-		//FbxString animStackName = currAnimStack->GetName();
-		//FbxTakeInfo* takeInfo = Scene->GetTakeInfo(animStackName);
-		//FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
-		//FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
-		//AnimLength = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
-
-		//int materialCount = NodeThing->GetSrcObjectCount<FbxSurfaceMaterial>();
-		//for (int index = 0; index < materialCount; index++)
-		//{
-		//	FbxSurfaceMaterial* material = (FbxSurfaceMaterial*)NodeThing->GetSrcObject<FbxSurfaceMaterial>(index);
-		//	if (material != NULL)
-		//	{
-		//		FbxProperty prop = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
-		//		int textureCount = prop.GetSrcObjectCount<FbxTexture>();
-		//		for (int j = 0; j < textureCount; j++)
-		//		{
-		//			FbxTexture* texture = FbxCast<FbxTexture>(prop.GetSrcObject<FbxTexture>(j));
-		//			const char* textureName = texture->GetName();
-		//			FbxProperty p = texture->RootProperty.Find("Filename");
-		//		}
-		//	}
-		//}
-		//gets all bones, the bind pose matric, bone weights, vertex per bones
+		//gets all bones, the bind pose matrix, bone weights, vertex per bones
 		int numDefs = Mesh->GetDeformerCount();
+		FbxAMatrix geometryTransform = GetGeometryTransformation(NodeThing);
 		FbxSkin* skin = (FbxSkin*)Mesh->GetDeformer(0, FbxDeformer::eSkin);
 		if (skin != 0) {
 			int boneCnt = skin->GetClusterCount();
@@ -156,7 +94,13 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 				FbxCluster* cl = skin->GetCluster(BIndex);
 				FbxNode* bone = cl->GetLink();
 				Bone tempBone;
-				cl->GetTransformLinkMatrix(tempBone.bindPoseMatrix);
+				tempBone.name = cl->GetLink()->GetName();
+				FbxAMatrix tempMat;
+				FbxAMatrix transformMatrix;
+				cl->GetTransformMatrix(transformMatrix);
+				cl->GetTransformLinkMatrix(tempMat);
+				//Matrix Conversion Here
+				tempBone.bindPoseMatrix = ConvertToDirectX(transformMatrix.Inverse() * transformMatrix * geometryTransform);
 				int* boneVertexInds = cl->GetControlPointIndices();
 				double *boneVertexWeights = cl->GetControlPointWeights();
 				int NumBoneVertInd = cl->GetControlPointIndicesCount();
@@ -165,6 +109,25 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 					tempBone.BoneWeights.push_back((float)boneVertexWeights[BVIndex]);
 				}
 				tempBone.parentIndex = ParentIndex;
+				//Get Animation Info (only one take whatever that means)
+
+				FbxAnimStack* currAnimStack = Scene->GetSrcObject<FbxAnimStack>(0);
+				FbxString animStackName = currAnimStack->GetName();
+				CurrentAnimName = animStackName.Buffer();
+				FbxTakeInfo* takeInfo = Scene->GetTakeInfo(animStackName);
+				FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
+				FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
+				AnimLength = (unsigned int)(end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24));
+				for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); i++) {
+					FbxTime currTime;
+					currTime.SetFrame(i, FbxTime::eFrames24);
+					KeyFrame currAnim;
+					currAnim.FrameNum = i;
+					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
+					//Matrix Conversion here
+					currAnim.GlobalTransform = ConvertToDirectX(currentTransformOffset.Inverse() * cl->GetLink()->EvaluateGlobalTransform(currTime));
+					tempBone.frames.push_back(currAnim);
+				}
 				Skeleton.push_back(tempBone);
 			}
 		}
@@ -173,4 +136,33 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 		FbxNode* ChildNode = NodeThing->GetChild(i);
 		ExportFBX(ChildNode, (int)Skeleton.size() - 1);
 	}
+}
+
+FbxAMatrix FBXExporter::FBXExport::GetGeometryTransformation(FbxNode * inNode)
+{
+	if (!inNode)
+	{
+		throw std::exception("Null for mesh geometry");
+	}
+
+	const FbxVector4 lT = inNode->GetGeometricTranslation(FbxNode::eSourcePivot);
+	const FbxVector4 lR = inNode->GetGeometricRotation(FbxNode::eSourcePivot);
+	const FbxVector4 lS = inNode->GetGeometricScaling(FbxNode::eSourcePivot);
+
+	return FbxAMatrix(lT, lR, lS);
+}
+
+void FBXExporter::FBXExport::ClearInfo()
+{
+	InputFilePath.clear();
+	OutputFilePath = nullptr;
+	Verts.clear();
+	Normals.clear();
+	UVs.clear();
+	Indecies.clear();
+	Skeleton.clear();
+	CurrentAnimName.clear();
+	AnimLength = 0;
+	Scene = nullptr;
+	SdkManager = nullptr;
 }
