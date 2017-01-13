@@ -35,6 +35,7 @@ namespace FBXExporter
 		std::vector<Vertex> Normals;
 		std::vector<Vertex> UVs;
 		std::vector<int> Indecies;
+		std::vector<int> CompInds;
 		std::vector<Bone> Skeleton;
 		std::string CurrentAnimName;
 		unsigned int AnimLength;

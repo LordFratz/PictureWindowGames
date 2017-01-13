@@ -57,6 +57,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 				for (int j = 0; j < NumV; j++) {
 					int CPIndex = Mesh->GetPolygonVertex(e, j);
 					Indecies.push_back(spot);
+					CompInds.push_back(CPIndex);
 					spot++;
 					Vertex vert;
 					Vertex newNormal;

@@ -10,6 +10,7 @@ extern "C" {
 		EXPORT float* GetUVs();
 		EXPORT short* GetShortInd();
 		EXPORT int* GetInd();
+		EXPORT int* GetCompInd();
 		EXPORT float** GetBoneBindMat();
 		EXPORT int** GetBoneVertInds();
 		EXPORT float** GetBoneWeights();

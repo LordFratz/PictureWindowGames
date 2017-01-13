@@ -78,6 +78,19 @@ int* whatever::GetInd()
 	return Ind;
 }
 
+//Gets the Index list that represents which verticies share the same space as which
+//Layout:
+//Basically what the Index list would be if the vertes were indexed to get rid of duplicates
+//{int 1}{int 2}{...}
+int * whatever::GetCompInd()
+{
+	int* Ind = new int[MyExporter.CompInds.size()];
+	for (int i = 0; i < MyExporter.CompInds.size(); i++) {
+		Ind[i] = MyExporter.CompInds[i];
+	}
+	return Ind;
+}
+
 //Gets Bind Pose Matrixies for EVERY bone (joint) in the model
 //Layout:
 //array of float arrays that represent each bind pose matrix in each bone in order that they are stored
@@ -223,7 +236,7 @@ float ** whatever::GetBoneAnimationKeyFrames()
 			int spot = 0;
 			for (int j = 0; j < 4; j++) {
 				for (int k = 0; k < 4; k++) {
-					temp[e * 16 + spot] = MyExporter.Skeleton[i].frames[e].GlobalTransform.mData[j].mData[k];
+					temp[e * 16 + spot] = (float)MyExporter.Skeleton[i].frames[e].GlobalTransform.mData[j].mData[k];
 					spot++;
 				}
 			}
