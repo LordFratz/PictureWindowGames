@@ -603,7 +603,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		int j = 0;
 	}
 
-	//ModelContext = new RenderContext(devResources, TexturedContext, CleanupPlaneContext false);
+	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
 	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), TexturedShape);
@@ -633,10 +633,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer10);
 
-	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
-	//auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	//Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
-	//ModelContext->ContextData.push_back(Buffer12);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer12 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer12->GetAddressOf());
+	ModelContext->ContextData.push_back(Buffer12);
+
 	auto SampleState1 = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
 	Device->CreateSamplerState(&samplerDesc, SampleState1->GetAddressOf());
 	ModelMesh->MeshData.push_back(SampleState1);
@@ -650,16 +651,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
 
-	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
-	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
-	//static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
-	//{
-	//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	//	{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	//	{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-	//};
-	//
-	//Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), ModelContext->m_inputLayout.GetAddressOf());
+	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), ModelContext->m_inputLayout.GetAddressOf());
 
 
 
