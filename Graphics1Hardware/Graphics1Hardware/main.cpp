@@ -318,6 +318,33 @@ namespace
 	}
 
 	void NoCleanup(std::vector<void*> toClean){}
+
+	void SkinnedShape(RenderNode &rNode)
+	{
+		auto Node = &(RenderShape&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, (BoxSkinnedConstBuff*)Node->ShapeData[0], 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(VertexPositionUVWNorm);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
+		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
+		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
+
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+	void CleanSkinnedShape(std::vector<void*> toClean)
+	{
+		delete toClean[0];
+	}
 }
 
 
@@ -630,7 +657,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), TexturedShape, NoCleanup);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanSkinnedShape);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -687,6 +714,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 													boneMats[i][8],  boneMats[i][9],  boneMats[i][10], boneMats[i][11],
 													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
 	}
+	ModelShape->ShapeData.push_back(ShapeData1);
 
 	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
