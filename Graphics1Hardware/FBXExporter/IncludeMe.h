@@ -21,6 +21,7 @@ extern "C" {
 		EXPORT int GetIndCount();
 		EXPORT int* GetBoneCounts();
 		EXPORT int** GetVertToBoneInds();
+		EXPORT float** GetVertWeightToBoneInds();
 		EXPORT int GetKeyFrameCount();
 		EXPORT float** GetBoneAnimationKeyFrames();
 	}
