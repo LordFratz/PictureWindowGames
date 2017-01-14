@@ -30,6 +30,7 @@ using namespace DirectX;
 #include "Trivial_PS.csh"
 #include "BasicVertexShader.csh"
 #include "BasicPixelShader.csh"
+#include "BasicLitSkinningVertShader.csh"
 #include "BasicToLightVertexShader.csh"
 #include "BasicLightPixelShader.csh"
 #include "DeviceResources.h"
@@ -63,6 +64,15 @@ struct VertexPositionUVWNorm
 	XMFLOAT4 pos;
 	XMFLOAT4 UVW;
 	XMFLOAT4 Norm;
+};
+
+struct SkinnedVert
+{
+	XMFLOAT4 pos;
+	XMFLOAT4 UVW;
+	XMFLOAT4 Norm;
+	XMFLOAT4 Weights;
+	XMINT4   Indices;
 };
 
 class Camera
@@ -579,10 +589,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #endif
 
 	whatever::loadFile("../Resources/Box_Jump.fbx");
-	//float** BoneMatTest = whatever::GetBoneBindMat();
-	//int** BoneVertTest = whatever::GetBoneVertInds();
-	//float** BoneWeightTest = whatever::GetBoneWeights();
-	//int* BoneParentTest = whatever::GetParentInds();
+	float** BoneMatTest = whatever::GetBoneBindMat();
+	int** BoneVertTest = whatever::GetBoneVertInds();
+	float** BoneWeightTest = whatever::GetBoneWeights();
+	int* BoneParentTest = whatever::GetParentInds();
+
+	//float4 pos : POSITION;
+	//float4 uvw : UVW;
+	//float4 norm : NORM;
+	//float4 boneWeights : WEIGHTS;
+	//int4   boneIndices : INDICES;
 
 
 
@@ -600,7 +616,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.UVW = XMFLOAT4(UVs[i*2], UVs[i*2+1], 0, 0);
 		Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
 		VertexBuffer[i] = Temp;
-		int j = 0;
+	}
+	int** BoneIndices = whatever::GetBoneVertInds();
+	SkinnedVert* SkinnedVertexBuffer = new SkinnedVert[numVerts];
+	for(int i = 0; i < numVerts; i++)
+	{
+		SkinnedVert Temp;
+		Temp.pos = XMFLOAT4(Verts[i * 4], Verts[i * 4 + 1], Verts[i * 4 + 2], Verts[i * 4 + 3]);
+		Temp.UVW = XMFLOAT4(UVs[i * 2], UVs[i * 2 + 1], 0, 0);
+		Temp.Norm = XMFLOAT4(Norms[i * 4], Norms[i * 4 + 1], Norms[i * 4 + 2], Norms[i * 4 + 3]);
+		//Temp.Weights = XMFLOAT4()
 	}
 
 	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
@@ -651,16 +676,25 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
 
-	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+
+	//float4 pos : POSITION;
+	//float4 uvw : UVW;
+	//float4 norm : NORM;
+	//float4 boneWeights : WEIGHTS;
+	//int4   boneIndices : INDICES;
+
+	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "INDICES", 0, DXGI_FORMAT_R16G16B16A16_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
-	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), ModelContext->m_inputLayout.GetAddressOf());
+	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), ModelContext->m_inputLayout.GetAddressOf());
 
 
 

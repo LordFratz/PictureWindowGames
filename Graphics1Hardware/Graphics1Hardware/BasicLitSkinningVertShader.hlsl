@@ -5,8 +5,7 @@
 cbuffer WorldBuffer : register(b0)
 {
 	matrix worldMatrix;
-	float4 boneWeights[4];
-	matrix boneOffsets[4];
+	matrix boneOffsets[5]; //CHANGED PER skeleton # of bones + 1, 0 index holds identity matrix
 };
 //boneWeight[3] can be eliminated using boneWeight[3] = 1 - boneWeight[0] - boneWeight[1] - boneWeight[2] :: since weights must add up to 1
 
@@ -24,6 +23,8 @@ struct VertexShaderInput
 	float4 pos : POSITION;
 	float4 uvw : UVW;
 	float4 norm : NORM;
+	float4 boneWeights : WEIGHTS;
+	int4   boneIndices : INDICES;
 };
 
 struct PixelShaderInput
@@ -41,13 +42,13 @@ PixelShaderInput main(VertexShaderInput input)
 	float4 skinnedPos = float4(0.0f, 0.0f, 0.0f, 1.0);
 	input.pos.w = 1.0f;
 
-	skinnedPos += boneWeights[0] * mul(input.pos, boneOffsets[0]);
-	skinnedPos += boneWeights[1] * mul(input.pos, boneOffsets[1]);
-	skinnedPos += boneWeights[2] * mul(input.pos, boneOffsets[2]);
-	skinnedPos += boneWeights[3] * mul(input.pos, boneOffsets[3]);
+	skinnedPos += input.boneWeights[0] * mul(input.pos, boneOffsets[input.boneIndices[0]]);
+	skinnedPos += input.boneWeights[1] * mul(input.pos, boneOffsets[input.boneIndices[1]]);
+	skinnedPos += input.boneWeights[2] * mul(input.pos, boneOffsets[input.boneIndices[2]]);
+	skinnedPos += input.boneWeights[3] * mul(input.pos, boneOffsets[input.boneIndices[3]]);
 	skinnedPos.w = 1.0f;
 
-	float pos = output.surfacePos = mul(skinnedPos, worldMatrix);
+	float4 pos = output.surfacePos = mul(skinnedPos, worldMatrix);
 	pos = mul(pos, view);
 	pos = mul(pos, projection);
 	output.pos = pos;
