@@ -678,7 +678,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.pSysMem = SkinnedVertexBuffer;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(SkinnedVertexBuffer) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(SkinnedVert) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
@@ -732,6 +732,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 	planeContext->AddChild(planeShape);
+	planeContext->AddChild(ModelContext);
 	planeContext->AddChild(ModelShape);
 	Set = RenderSet();
 	Set.SetHead(planeContext);
