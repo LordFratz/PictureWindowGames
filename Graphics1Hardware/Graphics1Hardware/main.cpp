@@ -344,6 +344,64 @@ namespace
 	{
 		delete toClean[0];
 	}
+
+	void SkinnedUpdate(RenderShape &node, float delta)
+	{
+		auto bufferData =   (BoxSkinnedConstBuff*)node.ShapeData[0];
+		auto keyframes =    (XMFLOAT4X4**)node.ShapeData[1];
+		auto numKeyframes = (int*)node.ShapeData[2];
+		auto currKeyframe = (int*)node.ShapeData[3];
+		auto lastKeyframe = (int*)node.ShapeData[4];
+		auto numBones =     (int*)node.ShapeData[5];
+
+		if(GetAsyncKeyState(0x4f))
+		{
+			*currKeyframe = *currKeyframe - 1;
+			if(*currKeyframe < 0)
+			{
+				*currKeyframe = *numKeyframes - 1;
+			}
+			else if (*currKeyframe > *numKeyframes - 1)
+			{
+				*currKeyframe = 0;
+			}
+		}
+		else if(GetAsyncKeyState(0x50))
+		{
+			*currKeyframe = *currKeyframe + 1;
+			if(*currKeyframe > *numKeyframes - 1)
+			{
+				*currKeyframe = 0;
+			}
+			else if (*currKeyframe < 0)
+			{
+				*currKeyframe = *numKeyframes - 1;
+			}
+		}
+
+		if(*currKeyframe != *lastKeyframe)
+		{
+			*lastKeyframe = *currKeyframe;
+			for(int i = 0; i < *numBones; i++)
+			{
+				bufferData->boneOffsets[i + 1] = keyframes[i][*currKeyframe];
+			}
+		}
+		*(BoxSkinnedConstBuff*)node.ShapeData[0] = *bufferData;
+		*(int*)node.ShapeData[3] = *currKeyframe;
+		*(int*)node.ShapeData[4] = *lastKeyframe;
+
+	}
+
+	void CleanSkinnedUpdates(std::vector<void*> toClean)
+	{
+		delete toClean[0];
+		delete[] toClean[1];
+		delete toClean[2];
+		delete toClean[3];
+		delete toClean[4];
+		delete toClean[5];
+	}
 }
 
 
@@ -656,7 +714,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanSkinnedShape);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanSkinnedUpdates, SkinnedUpdate);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -705,15 +763,36 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ShapeData1->worldMatrix = ModelShape->WorldMat;
 	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
 	int numBones = whatever::GetBoneCount();
+	int numKeyframes = whatever::GetKeyFrameCount();
 	float** boneMats = whatever::GetBoneBindMat();
+	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
+	XMFLOAT4X4** allBoneMats = new XMFLOAT4X4*[numBones];
 	for (int i = 0; i < numBones; i++)
 	{
+		allBoneMats[i] = new XMFLOAT4X4[numKeyframes + 1];
 		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0],  boneMats[i][1],  boneMats[i][2],  boneMats[i][3],
 													boneMats[i][4],  boneMats[i][5],  boneMats[i][6],  boneMats[i][7],
 													boneMats[i][8],  boneMats[i][9],  boneMats[i][10], boneMats[i][11],
 													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+		allBoneMats[i][0] = XMFLOAT4X4(boneMats[i][0],  boneMats[i][1],  boneMats[i][2],  boneMats[i][3],
+									   boneMats[i][4],  boneMats[i][5],  boneMats[i][6],  boneMats[i][7],
+									   boneMats[i][8],  boneMats[i][9],  boneMats[i][10], boneMats[i][11],
+									   boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+
+		for(int j = 0; j < numKeyframes; j++)
+		{
+			allBoneMats[i][j + 1] = XMFLOAT4X4(keyFrames[i][j * 16 + 0],  keyFrames[i][j * 16 + 1],  keyFrames[i][j * 16 + 2],  keyFrames[i][j * 16 + 3],
+											   keyFrames[i][j * 16 + 4],  keyFrames[i][j * 16 + 5],  keyFrames[i][j * 16 + 6],  keyFrames[i][j * 16 + 7],
+											   keyFrames[i][j * 16 + 8],  keyFrames[i][j * 16 + 9],  keyFrames[i][j * 16 + 10], keyFrames[i][j * 16 + 11],
+											   keyFrames[i][j * 16 + 12], keyFrames[i][j * 16 + 13], keyFrames[i][j * 16 + 14], keyFrames[i][j * 16 + 15]);
+		}
 	}
 	ModelShape->ShapeData.push_back(ShapeData1);
+	ModelShape->ShapeData.push_back(allBoneMats);
+	ModelShape->ShapeData.push_back(new int(numKeyframes + 1));
+	ModelShape->ShapeData.push_back(new int(0));
+	ModelShape->ShapeData.push_back(new int(0));
+	ModelShape->ShapeData.push_back(new int(numBones));
 
 	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
@@ -757,6 +836,7 @@ bool DEMO_APP::Run()
 	float delta = (float)timer.Delta();
 
 	CurrCamera->update(delta);
+	ModelShape->Update(delta);
 
 	dContext->OMSetRenderTargets(1, &targetView, NULL);
 	dContext->RSSetViewports(1, &viewport);
