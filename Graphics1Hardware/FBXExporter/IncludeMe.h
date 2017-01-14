@@ -19,7 +19,7 @@ extern "C" {
 		EXPORT int GetNormalCount();
 		EXPORT int GetUVCount();
 		EXPORT int GetIndCount();
-		EXPORT int* GetBoneCounts();
+		EXPORT int GetBoneCount();
 		EXPORT int** GetVertToBoneInds();
 		EXPORT float** GetVertWeightToBoneInds();
 		EXPORT int GetKeyFrameCount();

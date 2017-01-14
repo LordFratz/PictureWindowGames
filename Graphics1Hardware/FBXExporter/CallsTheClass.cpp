@@ -201,15 +201,9 @@ int whatever::GetIndCount()
 //Gets the Bone Counts and the Counts of both the Vertex Indecies and Bone Weights for each bone
 //Layout:
 // {Amount of Bones}{Vert Indicies Count 1}{Bone Wieght Count 1}{...}
-int* whatever::GetBoneCounts()
+int whatever::GetBoneCount()
 {
-	int* Bonethang = new int[MyExporter.Skeleton.size() * 2 + 1];
-	Bonethang[0] = (int)MyExporter.Skeleton.size();
-	for (int i = 0; i < MyExporter.Skeleton.size(); i++) {
-		Bonethang[1 + (i * 2 + 0)] = (int)MyExporter.Skeleton[i].BoneVertInds.size();
-		Bonethang[1 + (i * 2 + 1)] = (int)MyExporter.Skeleton[i].BoneWeights.size();
-	}
-	return Bonethang;
+	return (int)MyExporter.Skeleton.size();
 }
 
 //Gets Every Bone that affects every vert in order
