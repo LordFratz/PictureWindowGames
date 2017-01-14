@@ -70,5 +70,8 @@
     <FxCompile Include="BasicLightPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="BasicLitSkinningVertShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
