@@ -84,7 +84,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 				}
 			}
 		}
-		//gets all bones, the bind pose matrix, bone weights, vertex per bones
+		//gets all bones, the bind pose matrix, bone weights, vertex per bones, and animation
 		int numDefs = Mesh->GetDeformerCount();
 		FbxAMatrix geometryTransform = GetGeometryTransformation(NodeThing);
 		FbxSkin* skin = (FbxSkin*)Mesh->GetDeformer(0, FbxDeformer::eSkin);
@@ -100,7 +100,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 				cl->GetTransformMatrix(transformMatrix);
 				cl->GetTransformLinkMatrix(tempMat);
 				//Matrix Conversion Here
-				tempBone.bindPoseMatrix = ConvertToDirectX(transformMatrix.Inverse() * transformMatrix * geometryTransform);
+				tempBone.bindPoseMatrix = ConvertToDirectX(tempMat * transformMatrix * geometryTransform);
 				int* boneVertexInds = cl->GetControlPointIndices();
 				double *boneVertexWeights = cl->GetControlPointWeights();
 				int NumBoneVertInd = cl->GetControlPointIndicesCount();
