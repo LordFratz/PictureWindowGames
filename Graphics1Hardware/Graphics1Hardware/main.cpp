@@ -711,6 +711,7 @@ bool DEMO_APP::ShutDown()
 	delete planeContext;
 	delete planeShape;
 	delete planeMesh;
+	delete ModelContext;
 	delete ModelShape;
 	delete ModelMesh;
 	devResources->cleanup();

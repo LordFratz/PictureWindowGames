@@ -98,6 +98,8 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer>	m_indexBuffer;
 	unsigned int m_indexCount;
 	std::vector<void*> MeshData;
+	//TODO: Remember to pre-invert the bind matrices
+	//Holds bind pose/bone data
 	CleanupFunc cFunc;
 	RenderMesh(CleanupFunc CFunc)
 	{
@@ -119,9 +121,12 @@ public:
 	RenderContext& Context;
 	XMFLOAT4X4 WorldMat;
 	sphere BoundingSphere;
+	//animation data (Bone Offset to Shader)
+	void(*Update)(float delta);
 
-	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode)) : RenderNode(Func), Mesh(mesh), Context(context)
+	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode), void(*update)(float delta) = nullptr) : RenderNode(Func), Mesh(mesh), Context(context)
 	{
+		Update = update;
 		next = nullptr;
 		m_deviceResources = deviceResources;
 		WorldMat = worldMat;
