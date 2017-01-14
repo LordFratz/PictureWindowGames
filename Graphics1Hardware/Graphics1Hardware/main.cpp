@@ -352,9 +352,10 @@ namespace
 		auto numKeyframes = (int*)node.ShapeData[2];
 		auto currKeyframe = (int*)node.ShapeData[3];
 		auto lastKeyframe = (int*)node.ShapeData[4];
-		auto numBones =     (int*)node.ShapeData[5];
+		auto numBones = (int*)node.ShapeData[5];
+		auto ranLastFrame = (bool*)node.ShapeData[6];
 
-		if(GetAsyncKeyState(0x4f))
+		if(GetAsyncKeyState(0x4f) & !*ranLastFrame)
 		{
 			*currKeyframe = *currKeyframe - 1;
 			if(*currKeyframe < 0)
@@ -365,8 +366,9 @@ namespace
 			{
 				*currKeyframe = 0;
 			}
+			*ranLastFrame = true;
 		}
-		else if(GetAsyncKeyState(0x50))
+		else if(GetAsyncKeyState(0x50) & !*ranLastFrame)
 		{
 			*currKeyframe = *currKeyframe + 1;
 			if(*currKeyframe > *numKeyframes - 1)
@@ -377,6 +379,11 @@ namespace
 			{
 				*currKeyframe = *numKeyframes - 1;
 			}
+			*ranLastFrame = true;
+		}
+		else
+		{
+			*ranLastFrame = false;
 		}
 
 		if(*currKeyframe != *lastKeyframe)
@@ -390,6 +397,7 @@ namespace
 		*(BoxSkinnedConstBuff*)node.ShapeData[0] = *bufferData;
 		*(int*)node.ShapeData[3] = *currKeyframe;
 		*(int*)node.ShapeData[4] = *lastKeyframe;
+		*(bool*)node.ShapeData[6] = *ranLastFrame;
 
 	}
 
@@ -401,6 +409,7 @@ namespace
 		delete toClean[3];
 		delete toClean[4];
 		delete toClean[5];
+		delete toClean[6];
 	}
 }
 
@@ -793,6 +802,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelShape->ShapeData.push_back(new int(0));
 	ModelShape->ShapeData.push_back(new int(0));
 	ModelShape->ShapeData.push_back(new int(numBones));
+	ModelShape->ShapeData.push_back(new bool(false));
 
 	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
