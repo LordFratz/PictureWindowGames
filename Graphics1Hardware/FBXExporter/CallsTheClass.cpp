@@ -249,6 +249,39 @@ int ** whatever::GetVertToBoneInds()
 	return Verts;
 }
 
+//Gets the Weights of each vert that correspond to each bone
+//Layout:
+//Literally the same things as GetVertToBoneInds() but with floats
+//and instead of bones being stored in each sub array, it is the weights in the same
+//spots as the bones for a easy side by side read (if -1 the bones don't exist so the weights also don't)
+float ** whatever::GetVertWeightToBoneInds()
+{
+	float** Verts = new float*[MyExporter.Verts.size()];
+	for (int i = 0; i < MyExporter.Verts.size(); i++) {
+		float* Bones = new float[4];
+		int spot = 0;
+		for (int e = 0; e < MyExporter.Skeleton.size(); e++) {
+			if (spot >= 4) {
+				break;
+			}
+			for (int j = 0; j < MyExporter.Skeleton[e].BoneVertInds.size(); j++) {
+				if (MyExporter.Skeleton[e].BoneVertInds[j] == MyExporter.CompInds[i]) {
+					Bones[spot] = MyExporter.Skeleton[e].BoneWeights[j];
+					spot++;
+					break;
+				}
+			}
+		}
+		if (spot < 4) {
+			for (int e = spot; e < 4; e++) {
+				Bones[e] = -1;
+			}
+		}
+		Verts[i] = Bones;
+	}
+	return Verts;
+}
+
 //Returns Count of Animation frames Loaded in 
 //(use these to read into animation Keyframes for each bone)
 int whatever::GetKeyFrameCount()
