@@ -8,7 +8,7 @@ FBXExporter::FBXExport MyExporter;
 //Loads a file, discards all previous values upon a new call
 void whatever::loadFile(const char * filename)
 {
-	MyExporter.FBXConvert(filename, "asdasd");
+	MyExporter.FBXConvert(filename);
 }
 
 //Every 4 floats refer to a single vertex postion
@@ -162,7 +162,7 @@ float ** whatever::GetBoneWeights()
 }
 
 //Gets parents Indicies to determine who is the parent / child of who
-//Use this to setup your skeleton system with the joints
+//Use this to setup your skeleton system with the joints (if -1 it has no parent)
 //Layout:
 //{Ind 1}{Ind 2}{...}
 int * whatever::GetParentInds()
@@ -210,6 +210,43 @@ int* whatever::GetBoneCounts()
 		Bonethang[1 + (i * 2 + 1)] = (int)MyExporter.Skeleton[i].BoneWeights.size();
 	}
 	return Bonethang;
+}
+
+//Gets Every Bone that affects every vert in order
+//Layout:
+//(always has 4 ints per each Vertex, if a bone is -1 the rest of the bones after it including that one do not exist)
+//{Vert 1}{Vert 2}{...}->
+//    V       V     v
+//{Bone 1}  {...} {...}
+//{Bone 2}
+//{Bone 3}
+//{Bone 4}
+int ** whatever::GetVertToBoneInds()
+{
+	int** Verts = new int*[MyExporter.Verts.size()];
+	for (int i = 0; i < MyExporter.Verts.size(); i++) {
+		int* Bones = new int[4];
+		int spot = 0;
+		for (int e = 0; e < MyExporter.Skeleton.size(); e++) {
+			if (spot >= 4) {
+				break;
+			}
+			for (int j = 0; j < MyExporter.Skeleton[e].BoneVertInds.size(); j++) {
+				if (MyExporter.Skeleton[e].BoneVertInds[j] == MyExporter.CompInds[i]) {
+					Bones[spot] = e;
+					spot++;
+					break;
+				}
+			}
+		}
+		if (spot < 4) {
+			for (int e = spot; e < 4; e++) {
+				Bones[e] = -1;
+			}
+		}
+		Verts[i] = Bones;
+	}
+	return Verts;
 }
 
 //Returns Count of Animation frames Loaded in 

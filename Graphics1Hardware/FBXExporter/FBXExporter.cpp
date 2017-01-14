@@ -5,9 +5,8 @@ FBXExporter::FBXExport::~FBXExport()
 {
 }
 
-void FBXExporter::FBXExport::FBXConvert(const char* filename, char* OutputName) {
+void FBXExporter::FBXExport::FBXConvert(const char* filename) {
 	InputFilePath = filename;
-	OutputFilePath = OutputName;
 	SdkManager = FbxManager::Create();
 	FbxIOSettings* ios = FbxIOSettings::Create(SdkManager, IOSROOT);
 	SdkManager->SetIOSettings(ios);
