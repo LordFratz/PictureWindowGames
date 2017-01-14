@@ -2,6 +2,7 @@
 
 #include <fbxsdk.h>
 #include <vector>
+#include "ExporterHeader.h"
 
 namespace FBXExporter
 {
@@ -42,7 +43,7 @@ namespace FBXExporter
 
 		FBXExport() {};
 		~FBXExport();
-		void FBXConvert(const char* filename, char* OutputName);
+		void FBXConvert(const char* filename);
 	private:
 		FbxAMatrix ConvertToDirectX(FbxAMatrix mat);
 		void ExportFBX(FbxNode* NodeThing, int ParentIndex = -1);
