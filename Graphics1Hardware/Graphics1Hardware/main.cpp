@@ -224,7 +224,6 @@ namespace
 	{
 		auto Node = &(RenderContext&)rNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
-
 		context->IASetInputLayout(Node->m_inputLayout.Get());
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
@@ -328,7 +327,7 @@ namespace
 		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, (BoxSkinnedConstBuff*)Node->ShapeData[0], 0, 0);
 		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
-		UINT stride = sizeof(VertexPositionUVWNorm);
+		UINT stride = sizeof(SkinnedVert);
 		UINT offset = 0;
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -724,12 +723,14 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{ "INDICES", 0, DXGI_FORMAT_R16G16B16A16_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+		{ "INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), ModelContext->m_inputLayout.GetAddressOf());
 
-
+	//ModelContext->AddChild(ModelShape);
+	//ModelContext->AddChild(planeContext);
+	//ModelContext->AddChild(planeShape);
 
 	planeContext->AddChild(planeShape);
 	planeContext->AddChild(ModelContext);
