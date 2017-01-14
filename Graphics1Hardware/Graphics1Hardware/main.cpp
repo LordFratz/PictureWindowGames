@@ -617,7 +617,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
 		VertexBuffer[i] = Temp;
 	}
-	int** BoneIndices = whatever::GetBoneVertInds();
+	int** BoneIndices = whatever::GetVertToBoneInds();
 	SkinnedVert* SkinnedVertexBuffer = new SkinnedVert[numVerts];
 	for(int i = 0; i < numVerts; i++)
 	{
@@ -626,6 +626,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.UVW = XMFLOAT4(UVs[i * 2], UVs[i * 2 + 1], 0, 0);
 		Temp.Norm = XMFLOAT4(Norms[i * 4], Norms[i * 4 + 1], Norms[i * 4 + 2], Norms[i * 4 + 3]);
 		//Temp.Weights = XMFLOAT4()
+		Temp.Indices = XMINT4(BoneIndices[i][0], BoneIndices[i][1], BoneIndices[i][2], BoneIndices[i][3]);
 	}
 
 	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
