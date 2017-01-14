@@ -75,6 +75,12 @@ struct SkinnedVert
 	XMINT4   Indices;
 };
 
+struct BoxSkinnedConstBuff
+{
+	XMFLOAT4X4 worldMatrix;
+	XMFLOAT4X4 boneOffsets[5];
+};
+
 class Camera
 {
 	XMMATRIX viewMatrix;
@@ -310,6 +316,8 @@ namespace
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
 		Texture->Reset();
 	}
+
+	void NoCleanup(std::vector<void*> toClean){}
 }
 
 
@@ -476,7 +484,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	planeMesh = new RenderMesh(CleanupTexturedShape);
 	XMFLOAT4X4 mat;
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
-	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape);
+	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape, NoCleanup);
 
 
 
@@ -589,35 +597,24 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #endif
 
 	whatever::loadFile("../Resources/Box_Jump.fbx");
-	float** BoneMatTest = whatever::GetBoneBindMat();
-	int** BoneVertTest = whatever::GetBoneVertInds();
-	float** BoneWeightTest = whatever::GetBoneWeights();
-	int* BoneParentTest = whatever::GetParentInds();
-
-	//float4 pos : POSITION;
-	//float4 uvw : UVW;
-	//float4 norm : NORM;
-	//float4 boneWeights : WEIGHTS;
-	//int4   boneIndices : INDICES;
-
-
 
 	int numVerts = whatever::GetVertCount();
-	VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
 	short* IndexBuffer = whatever::GetShortInd();
 	float* UVs = whatever::GetUVs();
 	float* Norms = whatever::GetNormals();
 	float* Verts = whatever::GetVerts();
 	int numIndices = whatever::GetIndCount();
-	for (int i = 0; i < numVerts; i++)
-	{
-		VertexPositionUVWNorm Temp;
-		Temp.pos = XMFLOAT4(Verts[i*4], Verts[i*4+1], Verts[i*4+2], Verts[i*4+3]);
-		Temp.UVW = XMFLOAT4(UVs[i*2], UVs[i*2+1], 0, 0);
-		Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
-		VertexBuffer[i] = Temp;
-	}
+	//VertexPositionUVWNorm* VertexBuffer = new VertexPositionUVWNorm[numVerts];
+	//for (int i = 0; i < numVerts; i++)
+	//{
+	//	VertexPositionUVWNorm Temp;
+	//	Temp.pos = XMFLOAT4(Verts[i*4], Verts[i*4+1], Verts[i*4+2], Verts[i*4+3]);
+	//	Temp.UVW = XMFLOAT4(UVs[i*2], UVs[i*2+1], 0, 0);
+	//	Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
+	//	VertexBuffer[i] = Temp;
+	//}
 	int** BoneIndices = whatever::GetVertToBoneInds();
+	float** BoneWeights = whatever::GetVertWeightToBoneInds();
 	SkinnedVert* SkinnedVertexBuffer = new SkinnedVert[numVerts];
 	for(int i = 0; i < numVerts; i++)
 	{
@@ -625,14 +622,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.pos = XMFLOAT4(Verts[i * 4], Verts[i * 4 + 1], Verts[i * 4 + 2], Verts[i * 4 + 3]);
 		Temp.UVW = XMFLOAT4(UVs[i * 2], UVs[i * 2 + 1], 0, 0);
 		Temp.Norm = XMFLOAT4(Norms[i * 4], Norms[i * 4 + 1], Norms[i * 4 + 2], Norms[i * 4 + 3]);
-		//Temp.Weights = XMFLOAT4()
-		Temp.Indices = XMINT4(BoneIndices[i][0], BoneIndices[i][1], BoneIndices[i][2], BoneIndices[i][3]);
+		Temp.Weights = XMFLOAT4(BoneWeights[i][0], BoneWeights[i][1], BoneWeights[i][2], BoneWeights[i][3]);
+		Temp.Indices = XMINT4(BoneIndices[i][0] + 1, BoneIndices[i][1] + 1, BoneIndices[i][2] + 1, BoneIndices[i][3] + 1);
+		SkinnedVertexBuffer[i] = Temp;
 	}
 
 	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), TexturedShape);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), TexturedShape, NoCleanup);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -644,17 +642,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * ModelMesh->m_indexCount, D3D11_BIND_INDEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, ModelShape->Mesh.m_indexBuffer.GetAddressOf());;
 
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(BoxSkinnedConstBuff), D3D11_BIND_CONSTANT_BUFFER);
 	auto Buffer11 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer11->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer11);
 
 	BufferData = { 0 };
-	BufferData.pSysMem = VertexBuffer;
+	BufferData.pSysMem = SkinnedVertexBuffer;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
-
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(SkinnedVertexBuffer) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
 	ModelMesh->MeshData.push_back(Buffer10);
@@ -677,12 +675,18 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
 
-
-	//float4 pos : POSITION;
-	//float4 uvw : UVW;
-	//float4 norm : NORM;
-	//float4 boneWeights : WEIGHTS;
-	//int4   boneIndices : INDICES;
+	auto ShapeData1 = new BoxSkinnedConstBuff;
+	ShapeData1->worldMatrix = ModelShape->WorldMat;
+	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
+	int numBones = whatever::GetBoneCounts();
+	float** boneMats = whatever::GetBoneBindMat();
+	for (int i = 0; i < *numBones; i++)
+	{
+		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0],  boneMats[i][1],  boneMats[i][2],  boneMats[i][3],
+													boneMats[i][4],  boneMats[i][5],  boneMats[i][6],  boneMats[i][7],
+													boneMats[i][8],  boneMats[i][9],  boneMats[i][10], boneMats[i][11],
+													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+	}
 
 	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());

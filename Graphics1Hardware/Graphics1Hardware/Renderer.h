@@ -121,11 +121,13 @@ public:
 	RenderContext& Context;
 	XMFLOAT4X4 WorldMat;
 	sphere BoundingSphere;
-	//animation data (Bone Offset to Shader)
+	std::vector<void*> ShapeData;
+	CleanupFunc cFunc;
 	void(*Update)(float delta);
 
-	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode), void(*update)(float delta) = nullptr) : RenderNode(Func), Mesh(mesh), Context(context)
+	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode), CleanupFunc CFunc, void(*update)(float delta) = nullptr) : RenderNode(Func), Mesh(mesh), Context(context)
 	{
+		cFunc = CFunc;
 		Update = update;
 		next = nullptr;
 		m_deviceResources = deviceResources;
@@ -134,6 +136,7 @@ public:
 	}
 	~RenderShape()
 	{
+		cFunc(ShapeData);
 	}
 };
 
