@@ -678,9 +678,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto ShapeData1 = new BoxSkinnedConstBuff;
 	ShapeData1->worldMatrix = ModelShape->WorldMat;
 	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
-	int numBones = whatever::GetBoneCounts();
+	int numBones = whatever::GetBoneCount();
 	float** boneMats = whatever::GetBoneBindMat();
-	for (int i = 0; i < *numBones; i++)
+	for (int i = 0; i < numBones; i++)
 	{
 		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0],  boneMats[i][1],  boneMats[i][2],  boneMats[i][3],
 													boneMats[i][4],  boneMats[i][5],  boneMats[i][6],  boneMats[i][7],
