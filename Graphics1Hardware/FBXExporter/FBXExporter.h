@@ -28,10 +28,8 @@ namespace FBXExporter
 			int parentIndex;
 		};
 	public:
-		FbxManager* SdkManager;
-		FbxScene* Scene;
-		std::string InputFilePath;
-		char* OutputFilePath;
+		FbxManager* SdkManager = nullptr;
+		FbxScene* Scene = nullptr;
 		std::vector<Vertex> Verts;
 		std::vector<Vertex> Normals;
 		std::vector<Vertex> UVs;
@@ -41,9 +39,12 @@ namespace FBXExporter
 		std::string CurrentAnimName;
 		unsigned int AnimLength;
 
+		int** BoneVerts = nullptr;
+		float** WeightVerts = nullptr;
+
 		FBXExport() {};
 		~FBXExport();
-		void FBXConvert(const char* filename);
+		void FBXConvert(const char* filename, const char* Fbxfilename);
 	private:
 		FbxAMatrix ConvertToDirectX(FbxAMatrix mat);
 		void ExportFBX(FbxNode* NodeThing);
@@ -51,5 +52,9 @@ namespace FBXExporter
 		void ClearInfo();
 		void ProcessSkeleton(FbxNode* RootNode);
 		void ProcessSkeletonRecur(FbxNode* inNode, int inDepth, int myIndex, int inParentIndex);
+		void SetVertToBoneInds();
+		void SetWeightToBoneInds();
+		void ExportToBin(const char* filename);
+		void ReadInBin(FileInfo::ExporterHeader* Header, const char* filename);
 	};
 }

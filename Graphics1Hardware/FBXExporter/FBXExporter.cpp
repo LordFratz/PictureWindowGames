@@ -3,25 +3,57 @@
 
 FBXExporter::FBXExport::~FBXExport()
 {
+	ClearInfo();
 }
 
-void FBXExporter::FBXExport::FBXConvert(const char* filename) {
-	InputFilePath = filename;
+void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfilename) {
+	std::string name = filename;
+	SdkManager = nullptr;
+	Scene = nullptr;
 	SdkManager = FbxManager::Create();
 	FbxIOSettings* ios = FbxIOSettings::Create(SdkManager, IOSROOT);
 	SdkManager->SetIOSettings(ios);
 	FbxImporter* Importer = FbxImporter::Create(SdkManager, "");
-	if (!Importer->Initialize(filename, -1, SdkManager->GetIOSettings())) {
+	if (!Importer->Initialize(Fbxfilename, -1, SdkManager->GetIOSettings())) {
 		printf("Call to FbxImporter::Initialize() failed.\n");
 		printf("Error returned: %s\n\n", Importer->GetStatus().GetErrorString());
 		exit(-1);
 	}
 	Scene = FbxScene::Create(SdkManager, "myScene");
 	Importer->Import(Scene);
+
+	//FbxLocalTime TimeStamp = Importer->GetFileHeaderInfo()->mCreationTimeStamp;
 	Importer->Destroy();
+	//time_t testTime;
+	//struct tm y2k = {0};
+	//y2k.tm_sec = TimeStamp.mSecond;
+	//y2k.tm_min = TimeStamp.mMinute;
+	//y2k.tm_hour = TimeStamp.mHour;
+	//y2k.tm_mday = TimeStamp.mDay;
+	//y2k.tm_mon = TimeStamp.mMonth;
+	//y2k.tm_year = TimeStamp.mYear;
+
+	//FILE* file = nullptr;
+	//FileInfo::ExporterHeader* Header = new FileInfo::ExporterHeader();
+	//
+	//if (Header->ReadHeader(&file, filename, Fbxfilename)) {
+	//	ReadInBin(Header, filename);
+	//}
+	//else {
+	//	ClearInfo();
+	//	FbxNode* RootNode = Scene->GetRootNode();
+	//	ProcessSkeleton(RootNode);
+	//	ExportFBX(RootNode);
+	//	SetVertToBoneInds();
+	//	SetWeightToBoneInds();
+	//	ExportToBin(filename);
+	//}
+	ClearInfo();
 	FbxNode* RootNode = Scene->GetRootNode();
 	ProcessSkeleton(RootNode);
 	ExportFBX(RootNode);
+	SetVertToBoneInds();
+	SetWeightToBoneInds();
 	Scene->Destroy();
 	SdkManager->Destroy();
 }
@@ -162,17 +194,28 @@ FbxAMatrix FBXExporter::FBXExport::GetGeometryTransformation(FbxNode * inNode)
 
 void FBXExporter::FBXExport::ClearInfo()
 {
-	InputFilePath.clear();
-	OutputFilePath = nullptr;
+	if (BoneVerts != nullptr) {
+		for (int i = 0; i < Verts.size(); i++) {
+			delete BoneVerts[i];
+		}
+		delete BoneVerts;
+		BoneVerts = nullptr;
+	}
+	if (WeightVerts != nullptr) {
+		for (int i = 0; i < Verts.size(); i++) {
+			delete WeightVerts[i];
+		}
+		delete WeightVerts;
+		WeightVerts = nullptr;
+	}
 	Verts.clear();
 	Normals.clear();
 	UVs.clear();
 	Indecies.clear();
+	CompInds.clear();
 	Skeleton.clear();
 	CurrentAnimName.clear();
 	AnimLength = 0;
-	Scene = nullptr;
-	SdkManager = nullptr;
 }
 
 void FBXExporter::FBXExport::ProcessSkeleton(FbxNode * RootNode)
@@ -195,5 +238,99 @@ void FBXExporter::FBXExport::ProcessSkeletonRecur(FbxNode * inNode, int inDepth,
 	for (int i = 0; i < inNode->GetChildCount(); i++)
 	{
 		ProcessSkeletonRecur(inNode->GetChild(i), inDepth + 1, (int)Skeleton.size(), myIndex);
+	}
+}
+
+void FBXExporter::FBXExport::SetVertToBoneInds()
+{
+	BoneVerts = new int*[Verts.size()];
+	for (int i = 0; i < Verts.size(); i++) {
+		int* Bones = new int[4];
+		int spot = 0;
+		for (int e = 0; e < Skeleton.size(); e++) {
+			if (spot >= 4) {
+				break;
+			}
+			for (int j = 0; j < Skeleton[e].BoneVertInds.size(); j++) {
+				if (Skeleton[e].BoneVertInds[j] == CompInds[i]) {
+					Bones[spot] = e;
+					spot++;
+					break;
+				}
+			}
+		}
+		if (spot < 4) {
+			for (int e = spot; e < 4; e++) {
+				Bones[e] = -1;
+			}
+		}
+		BoneVerts[i] = Bones;
+	}
+}
+
+void FBXExporter::FBXExport::SetWeightToBoneInds()
+{
+	WeightVerts = new float*[Verts.size()];
+	for (int i = 0; i < Verts.size(); i++) {
+		float* Bones = new float[4];
+		int spot = 0;
+		for (int e = 0; e < Skeleton.size(); e++) {
+			if (spot >= 4) {
+				break;
+			}
+			for (int j = 0; j < Skeleton[e].BoneVertInds.size(); j++) {
+				if (Skeleton[e].BoneVertInds[j] == CompInds[i]) {
+					Bones[spot] = Skeleton[e].BoneWeights[j];
+					spot++;
+					break;
+				}
+			}
+		}
+		if (spot < 4) {
+			for (int e = spot; e < 4; e++) {
+				Bones[e] = 0;
+			}
+		}
+		WeightVerts[i] = Bones;
+	}
+}
+
+void FBXExporter::FBXExport::ExportToBin(const char * filename)
+{
+	std::string TestName = filename;
+	int test = (int)TestName.find(".pwm");
+	if (test >= 0) { //Mesh Export
+
+	}
+	test = (int)TestName.find(".pws");
+	if (test >= 0) { //Rig / Skeleton / BindPose Export
+
+	}
+	test = (int)TestName.find(".pwa");
+	if (test >= 0) { //Animation Export
+
+	}
+}
+
+void FBXExporter::FBXExport::ReadInBin(FileInfo::ExporterHeader* Header, const char * filename)
+{
+	switch (Header->file) {
+	case FileInfo::FILE_TYPES::MESH:
+	{
+		break;
+	}
+	case FileInfo::FILE_TYPES::BIND_POSE:
+	{
+		break;
+	}
+	case FileInfo::FILE_TYPES::ANIMATION:
+	{
+		break;
+	}
+	case FileInfo::FILE_TYPES::NAV_MESH:
+	{
+		//???????
+		break;
+	}
 	}
 }

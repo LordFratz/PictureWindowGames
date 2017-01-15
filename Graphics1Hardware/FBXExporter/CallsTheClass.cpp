@@ -5,10 +5,12 @@
 
 FBXExporter::FBXExport MyExporter;
 
-//Loads a file, discards all previous values upon a new call
-void whatever::loadFile(const char * filename)
+//Loads a file with either a .pwm / .pws / .pwa
+//IF either of these file types needs to be updated / created -
+//all previous values are discarded and populated with the fbxfile data that is inputted
+void whatever::loadFile(const char* filename, const char* Fbxfilename)
 {
-	MyExporter.FBXConvert(filename);
+	MyExporter.FBXConvert(filename, Fbxfilename);
 }
 
 //Every 4 floats refer to a single vertex postion
@@ -217,32 +219,7 @@ int whatever::GetBoneCount()
 //{Bone 4}
 int ** whatever::GetVertToBoneInds()
 {
-	int** Verts = new int*[MyExporter.Verts.size()];
-	int cntthing = 0;
-	for (int i = 0; i < MyExporter.Verts.size(); i++) {
-		int* Bones = new int[4];
-		int spot = 0;
-		for (int e = 0; e < MyExporter.Skeleton.size(); e++) {
-			if (spot >= 4) {
-				break;
-			}
-			for (int j = 0; j < MyExporter.Skeleton[e].BoneVertInds.size(); j++) {
-				if (MyExporter.Skeleton[e].BoneVertInds[j] == MyExporter.CompInds[i]) {
-					Bones[spot] = e;
-					spot++;
-					break;
-				}
-			}
-		}
-		if (spot < 4) {
-			for (int e = spot; e < 4; e++) {
-				Bones[e] = -1;
-			}
-		}
-		Verts[i] = Bones;
-		cntthing++;
-	}
-	return Verts;
+	return MyExporter.BoneVerts;
 }
 
 //Gets the Weights of each vert that correspond to each bone
@@ -252,30 +229,7 @@ int ** whatever::GetVertToBoneInds()
 //spots as the bones for a easy side by side read (if -1 the bones don't exist so the weights also don't)
 float ** whatever::GetVertWeightToBoneInds()
 {
-	float** Verts = new float*[MyExporter.Verts.size()];
-	for (int i = 0; i < MyExporter.Verts.size(); i++) {
-		float* Bones = new float[4];
-		int spot = 0;
-		for (int e = 0; e < MyExporter.Skeleton.size(); e++) {
-			if (spot >= 4) {
-				break;
-			}
-			for (int j = 0; j < MyExporter.Skeleton[e].BoneVertInds.size(); j++) {
-				if (MyExporter.Skeleton[e].BoneVertInds[j] == MyExporter.CompInds[i]) {
-					Bones[spot] = MyExporter.Skeleton[e].BoneWeights[j];
-					spot++;
-					break;
-				}
-			}
-		}
-		if (spot < 4) {
-			for (int e = spot; e < 4; e++) {
-				Bones[e] = 0;
-			}
-		}
-		Verts[i] = Bones;
-	}
-	return Verts;
+	return MyExporter.WeightVerts;
 }
 
 //Returns Count of Animation frames Loaded in
