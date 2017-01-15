@@ -46,8 +46,10 @@ namespace FBXExporter
 		void FBXConvert(const char* filename);
 	private:
 		FbxAMatrix ConvertToDirectX(FbxAMatrix mat);
-		void ExportFBX(FbxNode* NodeThing, int ParentIndex = -1);
+		void ExportFBX(FbxNode* NodeThing);
 		FbxAMatrix GetGeometryTransformation(FbxNode* inNode);
 		void ClearInfo();
+		void ProcessSkeleton(FbxNode* RootNode);
+		void ProcessSkeletonRecur(FbxNode* inNode, int inDepth, int myIndex, int inParentIndex);
 	};
 }

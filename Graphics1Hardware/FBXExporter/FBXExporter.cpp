@@ -20,6 +20,7 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename) {
 	Importer->Import(Scene);
 	Importer->Destroy();
 	FbxNode* RootNode = Scene->GetRootNode();
+	ProcessSkeleton(RootNode);
 	ExportFBX(RootNode);
 	Scene->Destroy();
 	SdkManager->Destroy();
@@ -37,7 +38,7 @@ FbxAMatrix FBXExporter::FBXExport::ConvertToDirectX(FbxAMatrix mat)
 	return mat;
 }
 
-void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
+void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 {
 	if (NodeThing->GetNodeAttribute() != NULL && NodeThing->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMesh) {
 		FbxMesh* Mesh = (FbxMesh*)NodeThing->GetNodeAttribute();
@@ -93,22 +94,28 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 			for (int BIndex = 0; BIndex < boneCnt; BIndex++) {
 				FbxCluster* cl = skin->GetCluster(BIndex);
 				FbxNode* bone = cl->GetLink();
-				Bone tempBone;
-				tempBone.name = cl->GetLink()->GetName();
+				//Bone tempBone;
+				std::string tempname = cl->GetLink()->GetName();
+				int ind = 0;
+				for (; ind < Skeleton.size(); ind++) {
+					if (Skeleton[ind].name == tempname) {
+						break;
+					}
+				}
 				FbxAMatrix tempMat;
 				FbxAMatrix transformMatrix;
 				cl->GetTransformMatrix(transformMatrix);
 				cl->GetTransformLinkMatrix(tempMat);
 				//Matrix Conversion Here
-				tempBone.bindPoseMatrix = ConvertToDirectX(tempMat * transformMatrix * geometryTransform);
+				Skeleton[ind].bindPoseMatrix = ConvertToDirectX(tempMat * transformMatrix * geometryTransform);
 				int* boneVertexInds = cl->GetControlPointIndices();
 				double *boneVertexWeights = cl->GetControlPointWeights();
 				int NumBoneVertInd = cl->GetControlPointIndicesCount();
 				for (int BVIndex = 0; BVIndex < NumBoneVertInd; BVIndex++) {
-					tempBone.BoneVertInds.push_back(boneVertexInds[BVIndex]);
-					tempBone.BoneWeights.push_back((float)boneVertexWeights[BVIndex]);
+					Skeleton[ind].BoneVertInds.push_back(boneVertexInds[BVIndex]);
+					Skeleton[ind].BoneWeights.push_back((float)boneVertexWeights[BVIndex]);
 				}
-				tempBone.parentIndex = ParentIndex;
+				//tempBone.parentIndex = ParentIndex;
 				//Get Animation Info (only one take whatever that means)
 
 				FbxAnimStack* currAnimStack = Scene->GetSrcObject<FbxAnimStack>(0);
@@ -126,15 +133,16 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing, int ParentIndex)
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
 					currAnim.GlobalTransform = ConvertToDirectX(currentTransformOffset.Inverse() * cl->GetLink()->EvaluateGlobalTransform(currTime));
-					tempBone.frames.push_back(currAnim);
+					Skeleton[ind].frames.push_back(currAnim);
 				}
-				Skeleton.push_back(tempBone);
+				//Skeleton.push_back(tempBone);
 			}
 		}
 	}
 	for (int i = 0; i < NodeThing->GetChildCount(); i++) {
+		int x = NodeThing->GetChildCount();
 		FbxNode* ChildNode = NodeThing->GetChild(i);
-		ExportFBX(ChildNode, (int)Skeleton.size() - 1);
+		ExportFBX(ChildNode);
 	}
 }
 
@@ -165,4 +173,27 @@ void FBXExporter::FBXExport::ClearInfo()
 	AnimLength = 0;
 	Scene = nullptr;
 	SdkManager = nullptr;
+}
+
+void FBXExporter::FBXExport::ProcessSkeleton(FbxNode * RootNode)
+{
+	for (int i = 0; i < RootNode->GetChildCount(); i++) {
+		FbxNode* CurrNode = RootNode->GetChild(i);
+		ProcessSkeletonRecur(CurrNode, 0, 0 , -1);
+	}
+}
+
+void FBXExporter::FBXExport::ProcessSkeletonRecur(FbxNode * inNode, int inDepth, int myIndex, int inParentIndex)
+{
+	if (inNode->GetNodeAttribute() && inNode->GetNodeAttribute()->GetAttributeType() && inNode->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+	{
+		Bone tempBone;
+		tempBone.parentIndex = inParentIndex;
+		tempBone.name = inNode->GetName();
+		Skeleton.push_back(tempBone);
+	}
+	for (int i = 0; i < inNode->GetChildCount(); i++)
+	{
+		ProcessSkeletonRecur(inNode->GetChild(i), inDepth + 1, (int)Skeleton.size(), myIndex);
+	}
 }

@@ -218,6 +218,7 @@ int whatever::GetBoneCount()
 int ** whatever::GetVertToBoneInds()
 {
 	int** Verts = new int*[MyExporter.Verts.size()];
+	int cntthing = 0;
 	for (int i = 0; i < MyExporter.Verts.size(); i++) {
 		int* Bones = new int[4];
 		int spot = 0;
@@ -239,6 +240,7 @@ int ** whatever::GetVertToBoneInds()
 			}
 		}
 		Verts[i] = Bones;
+		cntthing++;
 	}
 	return Verts;
 }
