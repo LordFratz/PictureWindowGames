@@ -123,12 +123,12 @@ public:
 	sphere BoundingSphere;
 	std::vector<void*> ShapeData;
 	CleanupFunc cFunc;
-	void(*Update)(float delta);
+	void(*update)(RenderShape& node, float delta);
 
-	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode), CleanupFunc CFunc, void(*update)(float delta) = nullptr) : RenderNode(Func), Mesh(mesh), Context(context)
+	RenderShape(std::shared_ptr<DeviceResources> deviceResources, RenderMesh& mesh, RenderContext& context, XMFLOAT4X4 worldMat, sphere boundingSphere, void(*Func)(RenderNode &rNode), CleanupFunc CFunc, void(*Update)(RenderShape& node, float delta) = nullptr) : RenderNode(Func), Mesh(mesh), Context(context)
 	{
 		cFunc = CFunc;
-		Update = update;
+		update = Update;
 		next = nullptr;
 		m_deviceResources = deviceResources;
 		WorldMat = worldMat;
@@ -137,6 +137,11 @@ public:
 	~RenderShape()
 	{
 		cFunc(ShapeData);
+	}
+
+	void Update(float delta)
+	{
+		update(*this, delta);
 	}
 };
 

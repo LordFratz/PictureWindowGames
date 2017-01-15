@@ -270,7 +270,7 @@ float ** whatever::GetVertWeightToBoneInds()
 		}
 		if (spot < 4) {
 			for (int e = spot; e < 4; e++) {
-				Bones[e] = -1;
+				Bones[e] = 0;
 			}
 		}
 		Verts[i] = Bones;
@@ -278,7 +278,7 @@ float ** whatever::GetVertWeightToBoneInds()
 	return Verts;
 }
 
-//Returns Count of Animation frames Loaded in 
+//Returns Count of Animation frames Loaded in
 //(use these to read into animation Keyframes for each bone)
 int whatever::GetKeyFrameCount()
 {
