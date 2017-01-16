@@ -802,6 +802,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	float** boneMats = whatever::GetBoneBindMat();
 	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
 	XMFLOAT4X4** allBoneMats = new XMFLOAT4X4*[numBones];
+	Animation anim1 = Animation();
 	for (int i = 0; i < numBones; i++)
 	{
 		allBoneMats[i] = new XMFLOAT4X4[numKeyframes + 1];

@@ -21,72 +21,100 @@ struct sphere
 	}
 };
 
-struct Bone
-{
-public:
-	XMVECTOR rotation;
-	XMVECTOR position;
-};
-
 struct Keyframe
 {
 public:
 	float tweenTime;
-	std::vector<Bone> Bones;
+	XMVECTOR rotation;
+	XMVECTOR position;
+
+	XMMATRIX getMat()
+	{
+		const XMFLOAT3 one = XMFLOAT3(1, 1, 1);
+		return XMMatrixAffineTransformation(XMLoadFloat3(&one), XMVectorZero(), rotation, position);
+	}
+};
+
+struct Bone
+{
+	std::vector<Keyframe> frames;
+};
+
+struct currFrame
+{
+	std::vector<Keyframe> thisFrame;
 };
 
 struct Animation
 {
-public:
-	std::vector<Keyframe> Frames;
+	std::vector<Bone> bones;
 };
 
-class Interpolator
+struct PerBoneData
 {
 	float frameTime = 0;
 	int prevFrame = 0;
 	int nextFrame = 1;
+};
+
+class Interpolator
+{
+	std::vector<PerBoneData> perBoneData = std::vector<PerBoneData>();
+	bool initializedData = false;
 public:
 	Animation* animation;
 	bool KeyboardControl;
 	bool changedLastFrame;
-	Keyframe currFrame;
+	currFrame CurrFrame;
 	void Update(float delta)
 	{
 		if(KeyboardControl)
 		{
-			if(GetAsyncKeyState(0x4f)) //o
+			int moveDir = 0;
+			if(GetAsyncKeyState(0x4f))
 			{
 				if(!changedLastFrame)
-				{
-					prevFrame = nextFrame++;
-					if(nextFrame > animation->Frames.size())
-					{
-						nextFrame = 0;
-					}
-				}
-				changedLastFrame = true;
+					moveDir = 1;
 			}
-			else if(GetAsyncKeyState(0x50)) //p
+			else if(GetAsyncKeyState(0x50))
 			{
 				if(!changedLastFrame)
-				{
-					prevFrame = nextFrame--;
-					if (nextFrame < 0)
-					{
-						nextFrame = animation->Frames.size() - 1;
-					}
-				}
-				changedLastFrame = true;
+					moveDir = -1;
 			}
 			else
 			{
 				changedLastFrame = false;
 			}
+			for(int i = 0; i < animation->bones.size(); i++)
+			{
+				if(!initializedData)
+				{
+					perBoneData.push_back(PerBoneData());
+				}
+				perBoneData[i].prevFrame += moveDir;
+				perBoneData[i].nextFrame += moveDir;
+				if(perBoneData[i].nextFrame > animation->bones.size())
+				{
+					perBoneData[i].nextFrame = 0;
+				}
+				else if(perBoneData[i].nextFrame < 0)
+				{
+					perBoneData[i].nextFrame = (int)animation->bones.size() - 1;
+				}
+				if (perBoneData[i].prevFrame > animation->bones.size())
+				{
+					perBoneData[i].prevFrame = 0;
+				}
+				else if (perBoneData[i].prevFrame < 0)
+				{
+					perBoneData[i].prevFrame = (int)animation->bones.size() - 1;
+				}
 
-			currFrame = animation->Frames[prevFrame];
+				CurrFrame.thisFrame.push_back(animation->bones[i].frames[perBoneData[i].prevFrame]);
+				initializedData = true;
+			}
 
-			if(GetAsyncKeyState(0x49)) //i
+			if (GetAsyncKeyState(0x49)) //i
 			{
 				KeyboardControl = false;
 			}
@@ -97,45 +125,110 @@ public:
 			{
 				KeyboardControl = true;
 			}
-			frameTime += delta;
-
-			while (frameTime > animation->Frames[prevFrame].tweenTime)
+			CurrFrame = currFrame();
+			for(int i = 0; i < animation->bones.size(); i++)
 			{
-				frameTime -= animation->Frames[prevFrame].tweenTime;
-				prevFrame = nextFrame++;
-				if (nextFrame > animation->Frames.size())
+				if (!initializedData)
 				{
-					nextFrame = 0;
+					perBoneData.push_back(PerBoneData());
 				}
+				perBoneData[i].frameTime += delta;
+				while(perBoneData[i].frameTime > animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime)
+				{
+					perBoneData[i].frameTime -= animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
+					perBoneData[i].prevFrame = perBoneData[i].nextFrame++;
+					if(perBoneData[i].nextFrame > animation->bones[i].frames.size())
+					{
+						perBoneData[i].nextFrame = 0;
+					}
+				}
+				float tweenDelta = perBoneData[i].frameTime / animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
+				CurrFrame.thisFrame.push_back(Interpolate(animation->bones[i].frames[perBoneData[i].prevFrame], animation->bones[i].frames[perBoneData[i].nextFrame], tweenDelta));
 			}
-			float tweenDelta = frameTime / animation->Frames[prevFrame].tweenTime;
-			currFrame = Interpolate(animation->Frames[prevFrame], animation->Frames[nextFrame], tweenDelta);
 		}
 	}
 
 	Keyframe Interpolate(Keyframe currFrame, Keyframe nextFrame, float ratio)
 	{
 		Keyframe rv = Keyframe();
-		for (int i = 0; i < currFrame.Bones.size(); i++)
-		{
-			rv.Bones[i].rotation = XMQuaternionSlerp(currFrame.Bones[i].rotation, nextFrame.Bones[i].rotation, ratio);
-			rv.Bones[i].position = XMVectorLerp(currFrame.Bones[i].position, nextFrame.Bones[i].position, ratio);
-		}
+		rv.rotation = XMQuaternionSlerp(currFrame.rotation, nextFrame.rotation, ratio);
+		rv.position = XMVectorLerp(currFrame.position, nextFrame.position, ratio);
 		return rv;
 	}
 };
 
-//<temp>
-class KdTree
+class TransformNode
 {
-	//Function that takes in Camera and returns vector of RenderShapes
-	//Fast enough for all dynamic RenderShapes? or just static
-	//Better idea?
-};
-//</temp>
-typedef void(*CleanupFunc)(std::vector<void*> toClean);
+	std::vector<TransformNode*> children;
+	XMMATRIX local;
+	XMMATRIX world;
+	TransformNode* parent = nullptr;
+	bool dirty = true;
+public:
 
-//typedef void (*RenderFunc)(RenderNode &rNode);
+	XMMATRIX& getWorld()
+	{
+		if(dirty)
+		{
+			if (parent != nullptr)
+			{
+				world = local * parent->getWorld();
+			}
+			else
+			{
+				world = local;
+			}
+			dirty = false;
+		}
+		return world;
+	}
+
+	void setLocal(XMMATRIX& newLocal)
+	{
+		local = newLocal;
+		makeDirty();
+	}
+
+	void addParent(TransformNode* Parent)
+	{
+		parent = Parent;
+		Parent->children.push_back(this);
+	}
+
+private:
+	void makeDirty()
+	{
+		dirty = true;
+		for (int i = 0; i < children.size(); i++)
+		{
+			children[i]->makeDirty();
+		}
+	}
+};
+
+struct Skeleton
+{
+	std::vector<TransformNode> Bones; //1 to 1 index with bones in animation
+	std::vector<XMMATRIX> InverseBindMats;
+
+	XMFLOAT4X4* getBoneOffsets(currFrame frame, XMMATRIX world)
+	{
+		XMFLOAT4X4* offsets = new XMFLOAT4X4[frame.thisFrame.size() + 1]();
+		XMStoreFloat4x4(&offsets[0], XMMatrixIdentity());
+		for(int i = 0; i < frame.thisFrame.size(); i++)
+		{
+			auto val = frame.thisFrame[i].getMat();
+			Bones[i].setLocal(val);
+		}
+		for (int i = 0; i < frame.thisFrame.size(); i++)
+		{
+			XMStoreFloat4x4(&offsets[i + 1], Bones[i].getWorld() * InverseBindMats[i] * world);
+		}
+		return offsets;
+	}
+};
+
+typedef void(*CleanupFunc)(std::vector<void*> toClean);
 
 class RenderNode
 {
@@ -145,7 +238,7 @@ protected:
 public:
 
 	inline void renderProcess() { func(*this); };
-	RenderNode* GetNext() const { return next; };;
+	RenderNode* GetNext() const { return next; };
 
 	RenderNode(void(*Func)(RenderNode &rNode))
 	{
