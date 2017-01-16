@@ -23,6 +23,8 @@ extern "C" {
 		EXPORT int** GetVertToBoneInds();
 		EXPORT float** GetVertWeightToBoneInds();
 		EXPORT int GetKeyFrameCount();
+		EXPORT int GetAnimationStorageKeyCount();
 		EXPORT float** GetBoneAnimationKeyFrames();
+		EXPORT float** GetAnimationKeyframeTweens();
 	}
 };

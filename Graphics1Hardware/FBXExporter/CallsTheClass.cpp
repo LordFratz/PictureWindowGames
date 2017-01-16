@@ -257,6 +257,12 @@ int whatever::GetKeyFrameCount()
 	return MyExporter.AnimLength + 1; //Might be wrong
 }
 
+//Returns sizeof of storage arrays for GetBoneAnimationKeyFrames() and GetAnimationKeyframeTweens()
+int whatever::GetAnimationStorageKeyCount()
+{
+	return (int)MyExporter.frames.size();
+}
+
 //Returns Animation Keyframes
 //Layout:
 //array of float arrays for each animation in each bone
@@ -282,4 +288,20 @@ float ** whatever::GetBoneAnimationKeyFrames()
 		AnimThang[i] = temp;
 	}
 	return AnimThang;
+}
+
+float ** whatever::GetAnimationKeyframeTweens()
+{
+	float** Tweens = new float*[MyExporter.frames.size()];
+	for (int i = 0; i < MyExporter.frames.size(); i++) {
+		float* temp = new float[MyExporter.frames[i].size()];
+		for (int e = 0; e < MyExporter.frames[i].size(); e++) {
+			if (e + 1 == MyExporter.frames[i].size()) {
+				temp[e] = MyExporter.endTime - MyExporter.frames[i][e].timeStamp;
+			}
+			else temp[e] = MyExporter.frames[i][e - 1].timeStamp - MyExporter.frames[i][e].timeStamp;
+		}
+		Tweens[i] = temp;
+	}
+	return Tweens;
 }

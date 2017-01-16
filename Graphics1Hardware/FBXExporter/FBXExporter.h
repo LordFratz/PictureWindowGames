@@ -19,6 +19,7 @@ namespace FBXExporter
 		};
 
 		struct KeyFrame {
+			float timeStamp;
 			FbxLongLong FrameNum;
 			FbxAMatrix GlobalTransform;
 		};
@@ -50,6 +51,8 @@ namespace FBXExporter
 
 		std::vector<Vertexint> BoneVerts;
 		std::vector<Vertex> WeightVerts;
+		float startTime;
+		float endTime;
 
 		//int** BoneVerts = nullptr;
 		//float** WeightVerts = nullptr;

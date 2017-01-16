@@ -155,12 +155,15 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 				CurrentAnimName = animStackName.Buffer();
 				FbxTakeInfo* takeInfo = Scene->GetTakeInfo(animStackName);
 				FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
+				startTime = start.GetMilliSeconds();
 				FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
+				endTime = end.GetMilliSeconds();
 				AnimLength = (unsigned int)(end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24));
 				for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); i++) {
 					FbxTime currTime;
 					currTime.SetFrame(i, FbxTime::eFrames24);
 					KeyFrame currAnim;
+					currAnim.timeStamp = currTime.GetMilliSeconds();
 					currAnim.FrameNum = i;
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
@@ -360,11 +363,13 @@ void FBXExporter::FBXExport::ExportToBin(FileInfo::ExporterHeader* Header, const
 		Header = new FileInfo::ExporterHeader(FileInfo::FILE_TYPES::ANIMATION, Fbxfilename);
 		Header->anim.numBones = (uint32_t)frames.size();
 		Header->anim.numFrames = (uint32_t)AnimLength;
-		Header->anim.startTime = 0.0f; //to be created if needed
-		Header->anim.endTime = 0.0f; //to be created if needed
+		Header->anim.startTime = startTime; //to be created if needed
+		Header->anim.endTime = endTime; //to be created if needed
 		file.write((char*)Header, sizeof(*Header));
 		//Curr Animation name
-		file.write((char*)&CurrentAnimName, sizeof(CurrentAnimName)); //not currently working right^^^
+		int NameSize = CurrentAnimName.size();
+		file.write((char*)&NameSize, sizeof(int));
+		file.write(CurrentAnimName.c_str(), sizeof(CurrentAnimName.c_str())); //not currently working right^^^
 		//Export animations per bone
 		for (int i = 0; i < frames.size(); i++) {
 			int tempSize = (int)frames[i].size();
@@ -429,7 +434,7 @@ void FBXExporter::FBXExport::ReadInBin(FileInfo::ExporterHeader* Header, FILE* f
 			fread(&tempSize2, sizeof(int), 1, file);
 			BoneWeights[i].clear();
 			BoneWeights[i].resize(tempSize2);
-			if (tempSize > 0) {
+			if (tempSize2 > 0) {
 				fread(&BoneWeights[i][0], BoneWeights[i].size() * sizeof(float), 1, file);
 			}
 		}
@@ -454,10 +459,14 @@ void FBXExporter::FBXExport::ReadInBin(FileInfo::ExporterHeader* Header, FILE* f
 	}
 	case FileInfo::FILE_TYPES::ANIMATION:
 	{
+		startTime = Header->anim.startTime;
+		endTime = Header->anim.endTime;
 		//Load Curr Anim Name
 		CurrentAnimName.clear();
-		CurrentAnimName.resize(Header->bind.nameSize);
-		fread(&CurrentAnimName[0], sizeof(CurrentAnimName), 1, file);
+		int NameSize;
+		fread(&NameSize, sizeof(int), 1, file);
+		CurrentAnimName.resize(NameSize);
+		fread(&CurrentAnimName[0], sizeof(CurrentAnimName.c_str()), 1, file);
 		//Load Animation per Bone
 		frames.clear();
 		frames.resize(Header->anim.numBones);
