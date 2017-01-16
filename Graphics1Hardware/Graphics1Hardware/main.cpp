@@ -712,7 +712,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	whatever::loadFile("../Resources/Box_Jump.pwa", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
 	//whatever::loadFile("../Resources/Teddy_Run.fbx");
 
 	int numVerts = whatever::GetVertCount();
