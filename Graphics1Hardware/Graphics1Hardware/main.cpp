@@ -117,8 +117,8 @@ public:
 
 	void update(float delta)
 	{
-		float cameraSpeed = 0.5f * 0.001f; // * a delta time when time is added
-		float cameraRotateSpeed = 5.0f * cameraSpeed;
+		float cameraSpeed = 15.0f * delta; 
+		float cameraRotateSpeed = 2.0f * cameraSpeed;
 		GetCursorPos(&currCursor);
 		if (GetAsyncKeyState(87))
 			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, 0.0f, cameraSpeed));
