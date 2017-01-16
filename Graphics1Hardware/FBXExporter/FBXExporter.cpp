@@ -5,6 +5,7 @@
 
 FBXExporter::FBXExport::~FBXExport()
 {
+	NotLoadingMeshData = false;
 	ClearInfo();
 }
 
@@ -30,6 +31,7 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 	int test = (int)TestName.find(".pwm");
 	if (test >= 0) { //Mesh Export
 		Header = new FileInfo::ExporterHeader(FileInfo::FILE_TYPES::MESH, Fbxfilename);
+		NotLoadingMeshData = false;
 	}
 	test = (int)TestName.find(".pws");
 	if (test >= 0) { //Rig / Skeleton / BindPose Export
@@ -38,18 +40,22 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 	test = (int)TestName.find(".pwa");
 	if (test >= 0) { //Animation Export
 		Header = new FileInfo::ExporterHeader(FileInfo::FILE_TYPES::ANIMATION, Fbxfilename);
+		NotLoadingMeshData = true;
 	}
 	
 	if (Header->ReadHeader(&file, filename, Fbxfilename)) {
 		ReadInBin(Header, file, filename);
+		NotLoadingMeshData = true;
 	}
 	else {
 		ClearInfo();
 		FbxNode* RootNode = Scene->GetRootNode();
 		ProcessSkeleton(RootNode);
 		ExportFBX(RootNode);
-		SetVertToBoneInds();
-		SetWeightToBoneInds();
+		if (!NotLoadingMeshData) {
+			SetVertToBoneInds();
+			SetWeightToBoneInds();
+		}
 		ExportToBin(Header, filename, Fbxfilename);
 	}
 	Scene->Destroy();
@@ -190,8 +196,10 @@ void FBXExporter::FBXExport::ClearInfo()
 	frames.clear();
 	BoneVertInds.clear();
 	BoneWeights.clear();
-	BoneVerts.clear();
-	WeightVerts.clear();
+	if (!NotLoadingMeshData) {
+		BoneVerts.clear();
+		WeightVerts.clear();
+	}
 	Verts.clear();
 	Normals.clear();
 	UVs.clear();
@@ -310,21 +318,12 @@ void FBXExporter::FBXExport::ExportToBin(FileInfo::ExporterHeader* Header, const
 
 		//Export CompInds
 		file.write((char *)&CompInds[0], CompInds.size() * sizeof(int));
-		break;
-	}
-	case FileInfo::FILE_TYPES::BIND_POSE:
-	{
-		//header stuff
-		Header = new FileInfo::ExporterHeader(FileInfo::FILE_TYPES::BIND_POSE, Fbxfilename);
-		Header->bind.numBones = (uint32_t)Skeleton.size();
-		Header->bind.nameSize = (uint32_t)CurrentAnimName.size(); //Check this when loading
-		file.write((char*)Header, sizeof(*Header));
-		//Export Bones
-		file.write((char*)&CurrentAnimName, sizeof(CurrentAnimName)); //not currently working right^^^
-		file.write((char*)&Skeleton[0], Skeleton.size() * sizeof(Bone));
-		//Export Bones and Weights for each Bones
-		for (int i = 0; i < Skeleton.size(); i++) {
-			int tempSize = (int)BoneVertInds[i].size();
+
+		//Export Verts Inds and Weights for each Bones
+		int tempSize = (int)BoneVertInds.size();
+		file.write((char*)&tempSize, sizeof(int));
+		for (int i = 0; i < BoneVertInds.size(); i++) {
+			tempSize = (int)BoneVertInds[i].size();
 			file.write((char*)&tempSize, sizeof(int));
 			if (tempSize > 0) {
 				file.write((char*)&BoneVertInds[i][0], BoneVertInds[i].size() * sizeof(int));
@@ -336,12 +335,23 @@ void FBXExporter::FBXExport::ExportToBin(FileInfo::ExporterHeader* Header, const
 			}
 		}
 		//Export VertsToBones and WeigthsToBones
-		int tempSize = (int)BoneVerts.size();
+		tempSize = (int)BoneVerts.size();
 		file.write((char*)&tempSize, sizeof(int));
 		file.write((char*)&BoneVerts[0], BoneVerts.size() * sizeof(Vertexint));
 		tempSize = (int)WeightVerts.size();
 		file.write((char*)&tempSize, sizeof(int));
 		file.write((char*)&WeightVerts[0], WeightVerts.size() * sizeof(Vertex));
+		break;
+	}
+	case FileInfo::FILE_TYPES::BIND_POSE:
+	{
+		//header stuff
+		Header = new FileInfo::ExporterHeader(FileInfo::FILE_TYPES::BIND_POSE, Fbxfilename);
+		Header->bind.numBones = (uint32_t)Skeleton.size();
+		Header->bind.nameSize = (uint32_t)CurrentAnimName.size(); //Check this when loading
+		file.write((char*)Header, sizeof(*Header));
+		//Export Bones
+		file.write((char*)&Skeleton[0], Skeleton.size() * sizeof(Bone));
 		break;
 	}
 	case FileInfo::FILE_TYPES::ANIMATION:
@@ -353,6 +363,8 @@ void FBXExporter::FBXExport::ExportToBin(FileInfo::ExporterHeader* Header, const
 		Header->anim.startTime = 0.0f; //to be created if needed
 		Header->anim.endTime = 0.0f; //to be created if needed
 		file.write((char*)Header, sizeof(*Header));
+		//Curr Animation name
+		file.write((char*)&CurrentAnimName, sizeof(CurrentAnimName)); //not currently working right^^^
 		//Export animations per bone
 		for (int i = 0; i < frames.size(); i++) {
 			int tempSize = (int)frames[i].size();
@@ -398,39 +410,30 @@ void FBXExporter::FBXExport::ReadInBin(FileInfo::ExporterHeader* Header, FILE* f
 		for (int i = 0; i < Verts.size(); i++) {
 			Indecies.push_back(i);
 		}
-		break;
-	}
-	case FileInfo::FILE_TYPES::BIND_POSE:
-	{
-		//Load Curr Anim Name
-		CurrentAnimName.clear();
-		CurrentAnimName.resize(Header->bind.nameSize);
-		fread(&CurrentAnimName[0], sizeof(CurrentAnimName), 1, file);
-		//Load Bones
-		Skeleton.clear();
-		Skeleton.resize(Header->bind.numBones);
-		fread(&Skeleton[0], Skeleton.size() * sizeof(Bone), 1, file);
+
 		//Load Bone Verts and Bone weights for bones / unload unessecary Datas
+		int tempSize;
+		fread(&tempSize, sizeof(int), 1, file);
 		BoneVertInds.clear();
-		BoneVertInds.resize(Skeleton.size());
+		BoneVertInds.resize(tempSize);
 		BoneWeights.clear();
-		BoneWeights.resize(Skeleton.size());
-		for (int i = 0; i < Skeleton.size(); i++) {
-			int tempSize;
-			fread(&tempSize, sizeof(int), 1, file);
+		BoneWeights.resize(tempSize);
+		for (int i = 0; i < tempSize; i++) {
+			int tempSize2;
+			fread(&tempSize2, sizeof(int), 1, file);
 			BoneVertInds[i].clear();
-			BoneVertInds[i].resize(tempSize);
-			if (tempSize > 0) {
+			BoneVertInds[i].resize(tempSize2);
+			if (tempSize2 > 0) {
 				fread(&BoneVertInds[i][0], BoneVertInds[i].size() * sizeof(int), 1, file);
 			}
-			fread(&tempSize, sizeof(int), 1, file);
+			fread(&tempSize2, sizeof(int), 1, file);
 			BoneWeights[i].clear();
-			BoneWeights[i].resize(tempSize);
+			BoneWeights[i].resize(tempSize2);
 			if (tempSize > 0) {
 				fread(&BoneWeights[i][0], BoneWeights[i].size() * sizeof(float), 1, file);
 			}
 		}
-		int tempSize;
+		tempSize;
 		fread(&tempSize, sizeof(int), 1, file);
 		BoneVerts.clear();
 		BoneVerts.resize(tempSize);
@@ -441,11 +444,24 @@ void FBXExporter::FBXExport::ReadInBin(FileInfo::ExporterHeader* Header, FILE* f
 		fread(&WeightVerts[0], WeightVerts.size() * sizeof(Vertex), 1, file);
 		break;
 	}
+	case FileInfo::FILE_TYPES::BIND_POSE:
+	{
+		//Load Bones
+		Skeleton.clear();
+		Skeleton.resize(Header->bind.numBones);
+		fread(&Skeleton[0], Skeleton.size() * sizeof(Bone), 1, file);
+		break;
+	}
 	case FileInfo::FILE_TYPES::ANIMATION:
 	{
+		//Load Curr Anim Name
+		CurrentAnimName.clear();
+		CurrentAnimName.resize(Header->bind.nameSize);
+		fread(&CurrentAnimName[0], sizeof(CurrentAnimName), 1, file);
 		//Load Animation per Bone
 		frames.clear();
 		frames.resize(Header->anim.numBones);
+		AnimLength = Header->anim.numFrames;
 		for (unsigned int i = 0; i < Header->anim.numBones; i++) {
 			int tempSize;
 			fread(&tempSize, sizeof(int), 1, file);

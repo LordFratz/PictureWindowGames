@@ -54,6 +54,8 @@ namespace FBXExporter
 		//int** BoneVerts = nullptr;
 		//float** WeightVerts = nullptr;
 
+		bool NotLoadingMeshData = false;
+
 		FBXExport() {};
 		~FBXExport();
 		void FBXConvert(const char* filename, const char* Fbxfilename);
