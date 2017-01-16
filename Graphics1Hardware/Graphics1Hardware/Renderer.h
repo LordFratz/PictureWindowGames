@@ -38,33 +38,78 @@ public:
 struct Animation
 {
 public:
-	int prevFrame = 0;
 	std::vector<Keyframe> Frames;
 };
 
 class Interpolator
 {
-	float frameTime;
+	float frameTime = 0;
+	int prevFrame = 0;
+	int nextFrame = 1;
 public:
 	Animation* animation;
 	bool KeyboardControl;
+	bool changedLastFrame;
+	Keyframe currFrame;
 	void Update(float delta)
 	{
 		if(KeyboardControl)
 		{
+			if(GetAsyncKeyState(0x4f)) //o
+			{
+				if(!changedLastFrame)
+				{
+					prevFrame = nextFrame++;
+					if(nextFrame > animation->Frames.size())
+					{
+						nextFrame = 0;
+					}
+				}
+				changedLastFrame = true;
+			}
+			else if(GetAsyncKeyState(0x50)) //p
+			{
+				if(!changedLastFrame)
+				{
+					prevFrame = nextFrame--;
+					if (nextFrame < 0)
+					{
+						nextFrame = animation->Frames.size() - 1;
+					}
+				}
+				changedLastFrame = true;
+			}
+			else
+			{
+				changedLastFrame = false;
+			}
 
-			if(GetAsyncKeyState(0x49))
+			currFrame = animation->Frames[prevFrame];
+
+			if(GetAsyncKeyState(0x49)) //i
 			{
 				KeyboardControl = false;
 			}
 		}
 		else
 		{
-			if(GetAsyncKeyState(0x50) || GetAsyncKeyState(0x4f))
+			if(GetAsyncKeyState(0x50) || GetAsyncKeyState(0x4f)) // O or P
 			{
 				KeyboardControl = true;
 			}
 			frameTime += delta;
+
+			while (frameTime > animation->Frames[prevFrame].tweenTime)
+			{
+				frameTime -= animation->Frames[prevFrame].tweenTime;
+				prevFrame = nextFrame++;
+				if (nextFrame > animation->Frames.size())
+				{
+					nextFrame = 0;
+				}
+			}
+			float tweenDelta = frameTime / animation->Frames[prevFrame].tweenTime;
+			currFrame = Interpolate(animation->Frames[prevFrame], animation->Frames[nextFrame], tweenDelta);
 		}
 	}
 
