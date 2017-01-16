@@ -5,7 +5,7 @@
 cbuffer WorldBuffer : register(b0)
 {
 	matrix worldMatrix;
-	matrix boneOffsets[5]; //CHANGED PER skeleton # of bones + 1, 0 index holds identity matrix
+	matrix boneOffsets[38]; //CHANGED PER skeleton # of bones + 1, 0 index holds identity matrix
 };
 //boneWeight[3] can be eliminated using boneWeight[3] = 1 - boneWeight[0] - boneWeight[1] - boneWeight[2] :: since weights must add up to 1
 

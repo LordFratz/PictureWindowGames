@@ -252,6 +252,7 @@ float ** whatever::GetVertWeightToBoneInds()
 
 //Returns Count of Animation frames Loaded in
 //(use these to read into animation Keyframes for each bone)
+//DEPRICATED: will be removed once all refs are gone from code
 int whatever::GetKeyFrameCount()
 {
 	return MyExporter.AnimLength + 1; //Might be wrong
@@ -261,6 +262,12 @@ int whatever::GetKeyFrameCount()
 int whatever::GetAnimationStorageKeyCount()
 {
 	return (int)MyExporter.frames.size();
+}
+
+//Gets the Count in an array of size GetAnimationStorageKeyCount() of each KeyFrame of each
+int whatever::GetKeyFrameAmount(int AnimIndex)
+{
+	return (int)MyExporter.frames[AnimIndex].size();
 }
 
 //Returns Animation Keyframes

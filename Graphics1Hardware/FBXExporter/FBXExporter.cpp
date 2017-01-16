@@ -155,15 +155,15 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 				CurrentAnimName = animStackName.Buffer();
 				FbxTakeInfo* takeInfo = Scene->GetTakeInfo(animStackName);
 				FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
-				startTime = start.GetMilliSeconds();
+				startTime = (float)start.GetMilliSeconds();
 				FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
-				endTime = end.GetMilliSeconds();
+				endTime = (float)end.GetMilliSeconds();
 				AnimLength = (unsigned int)(end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24));
 				for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); i++) {
 					FbxTime currTime;
 					currTime.SetFrame(i, FbxTime::eFrames24);
 					KeyFrame currAnim;
-					currAnim.timeStamp = currTime.GetMilliSeconds();
+					currAnim.timeStamp = (float)currTime.GetMilliSeconds();
 					currAnim.FrameNum = i;
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
@@ -367,7 +367,7 @@ void FBXExporter::FBXExport::ExportToBin(FileInfo::ExporterHeader* Header, const
 		Header->anim.endTime = endTime; //to be created if needed
 		file.write((char*)Header, sizeof(*Header));
 		//Curr Animation name
-		int NameSize = CurrentAnimName.size();
+		int NameSize = (int)CurrentAnimName.size();
 		file.write((char*)&NameSize, sizeof(int));
 		file.write(CurrentAnimName.c_str(), sizeof(CurrentAnimName.c_str())); //not currently working right^^^
 		//Export animations per bone

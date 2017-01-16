@@ -27,6 +27,7 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain>			m_swapChain;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	m_d3dRenderTargetView;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView>	m_d3dDepthStencilView;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_d3dDepthStencilState;
 	D3D11_VIEWPORT									m_screenViewport;
 	DirectX::XMFLOAT4X4	m_orientationTransform3D;
 };

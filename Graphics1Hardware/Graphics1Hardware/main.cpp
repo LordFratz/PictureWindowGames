@@ -78,7 +78,7 @@ struct SkinnedVert
 struct BoxSkinnedConstBuff
 {
 	XMFLOAT4X4 worldMatrix;
-	XMFLOAT4X4 boneOffsets[5];
+	XMFLOAT4X4 boneOffsets[38];
 };
 
 class Camera
@@ -117,7 +117,7 @@ public:
 
 	void update(float delta)
 	{
-		float cameraSpeed = 0.5f * 0.001f; // * a delta time when time is added
+		float cameraSpeed = 0.5f * delta; // * a delta time when time is added
 		float cameraRotateSpeed = 5.0f * cameraSpeed;
 		GetCursorPos(&currCursor);
 		if (GetAsyncKeyState(87))
@@ -844,6 +844,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), ModelContext->m_inputLayout.GetAddressOf());
+
+	//Add temp spheres around here I think
 
 	//ModelContext->AddChild(ModelShape);
 	//ModelContext->AddChild(planeContext);

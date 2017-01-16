@@ -27,6 +27,7 @@ void DeviceResources::cleanup()
 {
 	m_swapChain.Reset();
 	m_d3dRenderTargetView.Reset();
+	m_d3dDepthStencilState.Reset();
 	m_d3dDepthStencilView.Reset();
 
 	m_d3dContext.Get()->ClearState();
@@ -69,6 +70,22 @@ void DeviceResources::initialize(int sWidth, int sHeight, HWND window)
 	m_screenViewport.Height = (FLOAT)sHeight;
 
 	m_d3dContext->RSSetViewports(1, &m_screenViewport);
+	D3D11_DEPTH_STENCIL_DESC StateDesc;
+	StateDesc.DepthEnable = true;
+	StateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	StateDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	StateDesc.StencilEnable = false;
+	StateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	StateDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	StateDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	StateDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	StateDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	StateDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	StateDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	StateDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	StateDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	StateDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	m_d3dDevice->CreateDepthStencilState(&StateDesc, &m_d3dDepthStencilState);
 
 	ID3D11Debug *d3dDebug = nullptr;
 	if (SUCCEEDED(m_d3dDevice.Get()->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
