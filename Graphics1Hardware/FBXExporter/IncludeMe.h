@@ -4,7 +4,7 @@
 
 extern "C" {
 	namespace whatever {
-		EXPORT void loadFile(const char* filename);
+		EXPORT void loadFile(const char* filename, const char* Fbxfilename);
 		EXPORT float* GetVerts();
 		EXPORT float* GetNormals();
 		EXPORT float* GetUVs();

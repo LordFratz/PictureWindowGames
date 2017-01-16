@@ -523,6 +523,22 @@ namespace GenerateObject
 	}
 }
 
+namespace ShaderLoader
+{
+	bool  LoadShader(std::vector<uint8_t> & _data, const char * _fileName) {
+		FILE * file = nullptr;
+		fopen_s(&file, _fileName, "rb");
+		if (!file) return false; //Normally Log that there was a bad file name sent in
+		fseek(file, 0, SEEK_END);
+		long size = ftell(file);
+		fseek(file, 0, SEEK_SET);
+		_data.resize(size);
+		fread(&_data[0], sizeof(uint8_t), size, file);
+		fclose(file);
+		return true;
+	}
+}
+
 //************************************************************
 //************ CREATION OF OBJECTS & RESOURCES ***************
 //************************************************************
@@ -582,6 +598,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 #if true //use this section once the plane has UVs, normals, and a texture loaded
+	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
+	//auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
+	//std::vector<uint8_t> VSData;
+	//std::vector<uint8_t> PSData;
+	//bool thing = ShaderLoader::LoadShader(VSData, "BasicToLightVertexShader.cso");
+	//thing = ShaderLoader::LoadShader(VSData, "BasicToLightPixelShader.cso");
+	//Device->CreateVertexShader(&VSData[0], VSData.size(), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
@@ -689,7 +712,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	whatever::loadFile("../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	//whatever::loadFile("../Resources/Teddy_Run.fbx");
 
 	int numVerts = whatever::GetVertCount();
 	short* IndexBuffer = whatever::GetShortInd();

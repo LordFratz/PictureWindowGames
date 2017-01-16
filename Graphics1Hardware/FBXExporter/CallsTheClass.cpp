@@ -5,10 +5,12 @@
 
 FBXExporter::FBXExport MyExporter;
 
-//Loads a file, discards all previous values upon a new call
-void whatever::loadFile(const char * filename)
+//Loads a file with either a .pwm / .pws / .pwa
+//IF either of these file types needs to be updated / created -
+//all previous values are discarded and populated with the fbxfile data that is inputted (takes quite awhile so be careful)
+void whatever::loadFile(const char* filename, const char* Fbxfilename)
 {
-	MyExporter.FBXConvert(filename);
+	MyExporter.FBXConvert(filename, Fbxfilename);
 }
 
 //Every 4 floats refer to a single vertex postion
@@ -129,11 +131,11 @@ float ** whatever::GetBoneBindMat()
 //{...}
 int ** whatever::GetBoneVertInds()
 {
-	int** VertInds = new int*[MyExporter.Skeleton.size()];
-	for (int i = 0; i < MyExporter.Skeleton.size(); i++) {
-		int* temp = new int[MyExporter.Skeleton[i].BoneVertInds.size()];
-		for (int e = 0; e < MyExporter.Skeleton[i].BoneVertInds.size(); e++) {
-			temp[e] = MyExporter.Skeleton[i].BoneVertInds[e];
+	int** VertInds = new int*[MyExporter.BoneVertInds.size()];
+	for (int i = 0; i < MyExporter.BoneVertInds.size(); i++) {
+		int* temp = new int[MyExporter.BoneVertInds[i].size()];
+		for (int e = 0; e < MyExporter.BoneVertInds[i].size(); e++) {
+			temp[e] = MyExporter.BoneVertInds[i][e];
 		}
 		VertInds[i] = temp;
 	}
@@ -150,11 +152,11 @@ int ** whatever::GetBoneVertInds()
 //{...}
 float ** whatever::GetBoneWeights()
 {
-	float** BoneWeights = new float*[MyExporter.Skeleton.size()];
-	for (int i = 0; i < MyExporter.Skeleton.size(); i++) {
-		float* temp = new float[MyExporter.Skeleton[i].BoneWeights.size()];
-		for (int e = 0; e < MyExporter.Skeleton[i].BoneWeights.size(); e++) {
-			temp[e] = MyExporter.Skeleton[i].BoneWeights[e];
+	float** BoneWeights = new float*[MyExporter.BoneWeights.size()];
+	for (int i = 0; i < MyExporter.BoneWeights.size(); i++) {
+		float* temp = new float[MyExporter.BoneWeights[i].size()];
+		for (int e = 0; e < MyExporter.BoneWeights[i].size(); e++) {
+			temp[e] = MyExporter.BoneWeights[i][e];
 		}
 		BoneWeights[i] = temp;
 	}
@@ -217,30 +219,16 @@ int whatever::GetBoneCount()
 //{Bone 4}
 int ** whatever::GetVertToBoneInds()
 {
-	int** Verts = new int*[MyExporter.Verts.size()];
-	for (int i = 0; i < MyExporter.Verts.size(); i++) {
-		int* Bones = new int[4];
-		int spot = 0;
-		for (int e = 0; e < MyExporter.Skeleton.size(); e++) {
-			if (spot >= 4) {
-				break;
-			}
-			for (int j = 0; j < MyExporter.Skeleton[e].BoneVertInds.size(); j++) {
-				if (MyExporter.Skeleton[e].BoneVertInds[j] == MyExporter.CompInds[i]) {
-					Bones[spot] = e;
-					spot++;
-					break;
-				}
-			}
-		}
-		if (spot < 4) {
-			for (int e = spot; e < 4; e++) {
-				Bones[e] = -1;
-			}
-		}
-		Verts[i] = Bones;
+	int** BV = new int*[MyExporter.BoneVerts.size()];
+	for (int i = 0; i < MyExporter.BoneVerts.size(); i++) {
+		int* BVTemp = new int[4];
+		BVTemp[0] = MyExporter.BoneVerts[i].pos[0];
+		BVTemp[1] = MyExporter.BoneVerts[i].pos[1];
+		BVTemp[2] = MyExporter.BoneVerts[i].pos[2];
+		BVTemp[3] = MyExporter.BoneVerts[i].pos[3];
+		BV[i] = BVTemp;
 	}
-	return Verts;
+	return BV;
 }
 
 //Gets the Weights of each vert that correspond to each bone
@@ -250,30 +238,16 @@ int ** whatever::GetVertToBoneInds()
 //spots as the bones for a easy side by side read (if -1 the bones don't exist so the weights also don't)
 float ** whatever::GetVertWeightToBoneInds()
 {
-	float** Verts = new float*[MyExporter.Verts.size()];
-	for (int i = 0; i < MyExporter.Verts.size(); i++) {
-		float* Bones = new float[4];
-		int spot = 0;
-		for (int e = 0; e < MyExporter.Skeleton.size(); e++) {
-			if (spot >= 4) {
-				break;
-			}
-			for (int j = 0; j < MyExporter.Skeleton[e].BoneVertInds.size(); j++) {
-				if (MyExporter.Skeleton[e].BoneVertInds[j] == MyExporter.CompInds[i]) {
-					Bones[spot] = MyExporter.Skeleton[e].BoneWeights[j];
-					spot++;
-					break;
-				}
-			}
-		}
-		if (spot < 4) {
-			for (int e = spot; e < 4; e++) {
-				Bones[e] = 0;
-			}
-		}
-		Verts[i] = Bones;
+	float** BV = new float*[MyExporter.BoneVerts.size()];
+	for (int i = 0; i < MyExporter.WeightVerts.size(); i++) {
+		float* BVTemp = new float[4];
+		BVTemp[0] = MyExporter.WeightVerts[i].pos[0];
+		BVTemp[1] = MyExporter.WeightVerts[i].pos[1];
+		BVTemp[2] = MyExporter.WeightVerts[i].pos[2];
+		BVTemp[3] = MyExporter.WeightVerts[i].pos[3];
+		BV[i] = BVTemp;
 	}
-	return Verts;
+	return BV;
 }
 
 //Returns Count of Animation frames Loaded in
@@ -293,14 +267,14 @@ int whatever::GetKeyFrameCount()
 //{...}
 float ** whatever::GetBoneAnimationKeyFrames()
 {
-	float** AnimThang = new float*[MyExporter.Skeleton.size()];
-	for (int i = 0; i < MyExporter.Skeleton.size(); i++) {
-		float* temp = new float[MyExporter.Skeleton[i].frames.size() * 16];
-		for (int e = 0; e < MyExporter.Skeleton[i].frames.size(); e++) {
+	float** AnimThang = new float*[MyExporter.frames.size()];
+	for (int i = 0; i < MyExporter.frames.size(); i++) {
+		float* temp = new float[MyExporter.frames[i].size() * 16];
+		for (int e = 0; e < MyExporter.frames[i].size(); e++) {
 			int spot = 0;
 			for (int j = 0; j < 4; j++) {
 				for (int k = 0; k < 4; k++) {
-					temp[e * 16 + spot] = (float)MyExporter.Skeleton[i].frames[e].GlobalTransform.mData[j].mData[k];
+					temp[e * 16 + spot] = (float)MyExporter.frames[i][e].GlobalTransform.mData[j].mData[k];
 					spot++;
 				}
 			}
