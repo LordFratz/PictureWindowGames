@@ -12,7 +12,7 @@
 //--------------------------------------------------------------------------------
 
 //Change this when any changes are done to the struct ExporterHeader
-#define EXPORTER_VERSION_NUMBER 1
+#define EXPORTER_VERSION_NUMBER 5
 //--------------------------------------------------------------------------------
 namespace FileInfo {
 	enum class FILE_TYPES : uint8_t { MESH, BIND_POSE, ANIMATION, NAV_MESH, ERROR_TYPE };
@@ -91,7 +91,7 @@ namespace FileInfo {
 			//Check to see if the fbx file has been updated after we exported the file
 			struct stat fileProperty;
 			stat(_FBXFileLocation, &fileProperty);
-			if (updateTime != fileProperty.st_mtime) {
+			if (updateTime < fileProperty.st_mtime) {
 				fclose(*_file);
 				*_file = nullptr;
 				return false;

@@ -78,7 +78,7 @@ struct SkinnedVert
 struct BoxSkinnedConstBuff
 {
 	XMFLOAT4X4 worldMatrix;
-	XMFLOAT4X4 boneOffsets[5];
+	XMFLOAT4X4 boneOffsets[38];
 };
 
 class Camera
@@ -117,8 +117,8 @@ public:
 
 	void update(float delta)
 	{
-		float cameraSpeed = 15.0f * delta; 
-		float cameraRotateSpeed = 2.0f * cameraSpeed;
+		float cameraSpeed = 0.5f * delta; // * a delta time when time is added
+		float cameraRotateSpeed = 5.0f * cameraSpeed;
 		GetCursorPos(&currCursor);
 		if (GetAsyncKeyState(87))
 			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, 0.0f, cameraSpeed));
@@ -712,8 +712,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	whatever::loadFile("../Resources/Box_Jump.pwa", "../Resources/Box_Jump.fbx");
-	//whatever::loadFile("../Resources/Teddy_Run.fbx");
+	whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	//whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
+	//whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
+	//whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 
 	int numVerts = whatever::GetVertCount();
 	short* IndexBuffer = whatever::GetShortInd();
@@ -840,6 +844,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), ModelContext->m_inputLayout.GetAddressOf());
+
+	//Add temp spheres around here I think
 
 	//ModelContext->AddChild(ModelShape);
 	//ModelContext->AddChild(planeContext);
