@@ -21,6 +21,65 @@ struct sphere
 	}
 };
 
+struct Bone
+{
+public:
+	XMVECTOR rotation;
+	XMVECTOR position;
+};
+
+struct Keyframe
+{
+public:
+	float tweenTime;
+	std::vector<Bone> Bones;
+};
+
+struct Animation
+{
+public:
+	int prevFrame = 0;
+	std::vector<Keyframe> Frames;
+};
+
+class Interpolator
+{
+	float frameTime;
+public:
+	Animation* animation;
+	bool KeyboardControl;
+	void Update(float delta)
+	{
+		if(KeyboardControl)
+		{
+
+			if(GetAsyncKeyState(0x49))
+			{
+				KeyboardControl = false;
+			}
+		}
+		else
+		{
+			if(GetAsyncKeyState(0x50) || GetAsyncKeyState(0x4f))
+			{
+				KeyboardControl = true;
+			}
+			frameTime += delta;
+		}
+	}
+
+	Keyframe Interpolate(Keyframe currFrame, Keyframe nextFrame, float ratio)
+	{
+		Keyframe rv = Keyframe();
+		for (int i = 0; i < currFrame.Bones.size(); i++)
+		{
+			rv.Bones[i].rotation = XMQuaternionSlerp(currFrame.Bones[i].rotation, nextFrame.Bones[i].rotation, ratio);
+			rv.Bones[i].position = XMVectorLerp(currFrame.Bones[i].position, nextFrame.Bones[i].position, ratio);
+		}
+		return rv;
+	}
+};
+
 //<temp>
 class KdTree
 {
