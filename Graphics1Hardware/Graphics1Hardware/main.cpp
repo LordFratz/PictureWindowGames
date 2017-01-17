@@ -159,6 +159,8 @@ public:
 static Camera* CurrCamera;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> InstanceBuff;
+static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterWireState;
+static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterState;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -204,7 +206,7 @@ class DEMO_APP
 	DirectionalLight dynaLight;
 	AnimInstances animInstances;
 	//added for camera
-
+	bool wire = false;
 public:
 	struct SIMPLE_VERTEX
 	{
@@ -1054,6 +1056,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &VSData2[0], VSData2.size(), ModelContext->m_inputLayout.GetAddressOf());
 
+
+	D3D11_RASTERIZER_DESC rasterStateDescriptor;
+	ZeroMemory(&rasterStateDescriptor, sizeof(rasterStateDescriptor));
+	rasterStateDescriptor.FillMode = D3D11_FILL_WIREFRAME;
+	rasterStateDescriptor.CullMode = D3D11_CULL_BACK;
+	rasterStateDescriptor.DepthClipEnable = true;
+
+	Device->CreateRasterizerState(&rasterStateDescriptor, rasterWireState.GetAddressOf());
+	rasterStateDescriptor.FillMode = D3D11_FILL_SOLID;
+	Device->CreateRasterizerState(&rasterStateDescriptor, rasterState.GetAddressOf());
 	//Add temp spheres around here I think
 	//VertexPositionUVWNorm* SphereMesh = GenerateObject::CreateD20Verts();
 	//int* SphereInds = GenerateObject::CreateD20Inds();
@@ -1095,7 +1107,14 @@ bool DEMO_APP::Run()
 	dContext->ClearRenderTargetView(targetView, color);
 	dContext->ClearDepthStencilView(devResources->GetDepthStencilView(), D3D10_CLEAR_DEPTH, 1, 1);
 	dContext->OMSetDepthStencilState(devResources->GetDepthStencilState(), 0);
-
+	if (GetAsyncKeyState('F') & 0x1)
+	{
+		wire = !wire;
+	}
+	if (wire)
+		dContext->RSSetState(rasterWireState.Get());
+	else
+		dContext->RSSetState(rasterState.Get());
 	Renderer::Render(&Set);
 	swapChain->Present(0, 0);
 
