@@ -72,16 +72,50 @@ public:
 		if(KeyboardControl)
 		{
 			int moveDir = 0;
+			float minNextKey = INFINITY;
 			if(GetAsyncKeyState(0x4f))
 			{
 				if(!changedLastFrame)
+				{
 					moveDir = 1;
+					for (int i = 0; i < animation->bones.size(); i++)
+					{
+						if (!initializedData)
+						{
+							perBoneData.push_back(PerBoneData());
+						}
+						if (animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime < minNextKey && moveDir == 1)
+						{
+							minNextKey = animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
+						}
+					}
+					initializedData = true;
+				}
 				changedLastFrame = true;
 			}
 			else if(GetAsyncKeyState(0x50))
 			{
 				if(!changedLastFrame)
+				{
 					moveDir = -1;
+					for (int i = 0; i < animation->bones.size(); i++)
+					{
+						if (!initializedData)
+						{
+							perBoneData.push_back(PerBoneData());
+						}
+						int temp = perBoneData[i].prevFrame - 1;
+						if (temp < 0)
+						{
+							temp = (int)animation->bones[i].frames.size() - 1;
+						}
+						if (animation->bones[i].frames[perBoneData[i].prevFrame - 1 > -1 ? perBoneData[i].prevFrame - 1 : (int)animation->bones[i].frames.size() - 1].tweenTime < minNextKey)
+						{
+							minNextKey = animation->bones[i].frames[temp].tweenTime != 0 ? animation->bones[i].frames[temp].tweenTime : .01f;
+						}
+					}
+					initializedData = true;
+				}
 				changedLastFrame = true;
 			}
 			else
@@ -93,35 +127,38 @@ public:
 			{
 				KeyboardControl = false;
 			}
+			if(minNextKey == INFINITY)
+			{
+				minNextKey = 0;
+			}
 			for(int i = 0; i < animation->bones.size(); i++)
 			{
-				if(!initializedData)
+				if (!initializedData)
 				{
 					perBoneData.push_back(PerBoneData());
 				}
-				perBoneData[i].prevFrame += moveDir;
-				perBoneData[i].nextFrame += moveDir;
-
-				if (perBoneData[i].nextFrame < 0)
+				perBoneData[i].frameTime += moveDir * minNextKey;
+				if(perBoneData[i].frameTime < 0)
 				{
-					perBoneData[i].nextFrame = (int)animation->bones[i].frames.size() - 1;
+					perBoneData[i].nextFrame = perBoneData[i].prevFrame--;
+					if (perBoneData[i].prevFrame < 0)
+					{
+						perBoneData[i].prevFrame = (int)animation->bones[i].frames.size() - 1;
+					}
+					perBoneData[i].frameTime += animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
 				}
-				else if(perBoneData[i].nextFrame > animation->bones[i].frames.size() - 1)
+				else if(perBoneData[i].frameTime > animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime)
 				{
-					perBoneData[i].nextFrame = 0;
+					perBoneData[i].prevFrame = perBoneData[i].nextFrame++;
+					if (perBoneData[i].nextFrame > animation->bones[i].frames.size() - 1)
+					{
+						perBoneData[i].nextFrame = 0;
+					}
+					perBoneData[i].frameTime -= animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
 				}
 
-				if (perBoneData[i].prevFrame < 0)
-				{
-					perBoneData[i].prevFrame = (int)animation->bones[i].frames.size() - 1;
-				}
-				else if (perBoneData[i].prevFrame > animation->bones[i].frames.size() - 1)
-				{
-					perBoneData[i].prevFrame = 0;
-				}
-
-
-				CurrFrame.thisFrame.push_back(animation->bones[i].frames[perBoneData[i].prevFrame]);
+				float tweenDelta = perBoneData[i].frameTime / animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
+				CurrFrame.thisFrame.push_back(Interpolate(animation->bones[i].frames[perBoneData[i].prevFrame], animation->bones[i].frames[perBoneData[i].nextFrame], tweenDelta));
 			}
 			initializedData = true;
 		}

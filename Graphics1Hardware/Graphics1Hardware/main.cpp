@@ -249,7 +249,7 @@ namespace
 		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
 		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, (BoxSkinnedConstBuff*)Node->ShapeData[0], 0, 0);
 		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
-		
+
 		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 
 		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
@@ -761,8 +761,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(AnimInstances), D3D11_BIND_CONSTANT_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData3, InstanceBuff.GetAddressOf());
 	//end instance initializations
-	
-	
+
+
 	auto SampleState = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -807,12 +807,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
-	whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
-	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
-	//whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
-	//whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
-	//whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
+	//whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
+	//whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
+	//whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
+	whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
+	whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 
 	int numVerts = whatever::GetVertCount();
 	short* IndexBuffer = whatever::GetShortInd();
