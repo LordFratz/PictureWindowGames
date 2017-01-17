@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box
-#define LOADED_BEAR 0
+#define LOADED_BEAR 1
 
 struct ViewProj
 {
@@ -972,6 +972,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 								   boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
 
 		XMStoreFloat4x4(&ShapeData1->boneOffsets[i + 1], XMMatrixInverse(nullptr, XMLoadFloat4x4(&currBind)));
+		//ShapeData1->boneOffsets[i + 1] = currBind;
 
 		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
 		skele1->Bones.push_back(TransformNode());

@@ -220,7 +220,7 @@ public:
 		{
 			if (parent != nullptr)
 			{
-				world = local * parent->getWorld();
+				world = XMMatrixInverse(nullptr, parent->getWorld()) * local;
 			}
 			else
 			{
@@ -253,7 +253,7 @@ private:
 		}
 	}
 };
-
+//Try multiplying in wrong order
 struct Skeleton
 {
 	std::vector<TransformNode> Bones; //1 to 1 index with bones in animation
@@ -270,7 +270,7 @@ struct Skeleton
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getLocal());
+			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getWorld());
 		}
 		return offsets;
 	}
@@ -415,4 +415,3 @@ namespace Renderer
 		}
 	}
 }
-
