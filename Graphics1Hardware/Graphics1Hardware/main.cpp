@@ -23,17 +23,8 @@ using namespace std;
 
 #include <d3d11.h>
 #include <DirectXMath.h>
-#include <DirectXColors.h>
 using namespace DirectX;
 #include "../FBXExporter/IncludeMe.h"
-//#include "Trivial_VS.csh"
-//#include "Trivial_PS.csh"
-//#include "BasicVertexShader.csh"
-//#include "BasicPixelShader.csh"
-//#include "BasicLitSkinningVertShader.csh"
-//#include "BasicToLightVertexShader.csh"
-//#include "BasicLightPixelShader.csh"
-#include "BasicGeometryShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
@@ -168,6 +159,8 @@ public:
 static Camera* CurrCamera;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> InstanceBuff;
+static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterWireState;
+static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterState;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -213,7 +206,7 @@ class DEMO_APP
 	DirectionalLight dynaLight;
 	AnimInstances animInstances;
 	//added for camera
-
+	bool wire = false;
 public:
 	struct SIMPLE_VERTEX
 	{
@@ -839,7 +832,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
 #endif
-		
+
 	if (LOADED_BEAR)
 	{
 		whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
@@ -924,13 +917,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelMesh->MeshData.push_back(SampleState1);
 
 	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
-	
+
 	//Change when bear texture gets added
 	if (LOADED_BEAR)
 	{
-		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		const size_t size1 = strlen("../Resources/Teddy_D.dds") + 1;
 		wText = new wchar_t[size1];
-		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/Teddy_D.dds", size_t(size1));
 	}
 	else
 	{
@@ -938,7 +931,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		wText = new wchar_t[size1];
 		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
 	}
-	
+
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
 	wText = NULL;
 	delete wText;
@@ -1082,6 +1075,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &VSData2[0], VSData2.size(), ModelContext->m_inputLayout.GetAddressOf());
 
+
+	D3D11_RASTERIZER_DESC rasterStateDescriptor;
+	ZeroMemory(&rasterStateDescriptor, sizeof(rasterStateDescriptor));
+	rasterStateDescriptor.FillMode = D3D11_FILL_WIREFRAME;
+	rasterStateDescriptor.CullMode = D3D11_CULL_BACK;
+	rasterStateDescriptor.DepthClipEnable = true;
+
+	Device->CreateRasterizerState(&rasterStateDescriptor, rasterWireState.GetAddressOf());
+	rasterStateDescriptor.FillMode = D3D11_FILL_SOLID;
+	Device->CreateRasterizerState(&rasterStateDescriptor, rasterState.GetAddressOf());
 	//Add temp spheres around here I think
 	//VertexPositionUVWNorm* SphereMesh = GenerateObject::CreateD20Verts();
 	//int* SphereInds = GenerateObject::CreateD20Inds();
@@ -1124,7 +1127,14 @@ bool DEMO_APP::Run()
 	dContext->ClearRenderTargetView(targetView, color);
 	dContext->ClearDepthStencilView(devResources->GetDepthStencilView(), D3D10_CLEAR_DEPTH, 1, 1);
 	dContext->OMSetDepthStencilState(devResources->GetDepthStencilState(), 0);
-
+	if (GetAsyncKeyState('F') & 0x1)
+	{
+		wire = !wire;
+	}
+	if (wire)
+		dContext->RSSetState(rasterWireState.Get());
+	else
+		dContext->RSSetState(rasterState.Get());
 	Renderer::Render(&Set);
 	swapChain->Present(0, 0);
 

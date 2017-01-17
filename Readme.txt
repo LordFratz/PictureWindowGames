@@ -6,3 +6,6 @@ Controls
     Movement WASD, X -> up, C -> down, right click and drag to look around
 	Animation: (When in manual mode) O -> cycle forward, P -> cycle backward, I -> switch to animated mode
 			   (When in animated mode) O/P -> switch to manual mode
+			   
+To render bear instead of box
+	Compile with LOADED_BEAR as 1 for bear, 0 for box (line 35 in main.cpp)
