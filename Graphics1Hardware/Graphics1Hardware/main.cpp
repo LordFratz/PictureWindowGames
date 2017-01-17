@@ -899,9 +899,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//Change when bear texture gets added
 	if (LOADED_BEAR)
 	{
-		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		const size_t size1 = strlen("../Resources/Teddy_D.dds") + 1;
 		wText = new wchar_t[size1];
-		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/Teddy_D.dds", size_t(size1));
 	}
 	else
 	{
