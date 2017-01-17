@@ -23,17 +23,8 @@ using namespace std;
 
 #include <d3d11.h>
 #include <DirectXMath.h>
-#include <DirectXColors.h>
 using namespace DirectX;
 #include "../FBXExporter/IncludeMe.h"
-//#include "Trivial_VS.csh"
-//#include "Trivial_PS.csh"
-//#include "BasicVertexShader.csh"
-//#include "BasicPixelShader.csh"
-//#include "BasicLitSkinningVertShader.csh"
-//#include "BasicToLightVertexShader.csh"
-//#include "BasicLightPixelShader.csh"
-#include "BasicGeometryShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
@@ -821,7 +812,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
 #endif
-		
+
 	if (LOADED_BEAR)
 	{
 		whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
@@ -906,13 +897,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelMesh->MeshData.push_back(SampleState1);
 
 	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
-	
+
 	//Change when bear texture gets added
 	if (LOADED_BEAR)
 	{
-		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		const size_t size1 = strlen("../Resources/Teddy_D.dds") + 1;
 		wText = new wchar_t[size1];
-		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/Teddy_D.dds", size_t(size1));
 	}
 	else
 	{
@@ -920,7 +911,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		wText = new wchar_t[size1];
 		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
 	}
-	
+
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
 	wText = NULL;
 	delete wText;
