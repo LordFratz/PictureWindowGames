@@ -40,6 +40,9 @@ using namespace DirectX;
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
 
+//define 1 for bear, 0 for box
+#define LOADED_BEAR 0
+
 struct ViewProj
 {
 	XMFLOAT4X4 view;
@@ -751,9 +754,19 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end light initializations
 
 	//instance initializations
-	XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-	XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 0.0f)));
-	XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixTranslation(-5.0f, 0.0f, 0.0f)));
+	if (LOADED_BEAR)
+	{
+		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(0.0f, 0.0f, 0.0f))));
+		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(5.0f, 0.0f, 1.0f))));
+		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(-5.0f, 0.0f, -1.0f))));
+	}
+	else
+	{
+		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f)));
+		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 1.0f)));
+		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixTranslation(-5.0f, 0.0f, -1.0f)));
+	}
+
 	D3D11_SUBRESOURCE_DATA BufferData3 = { 0 };
 	BufferData3.pSysMem = &animInstances;
 	BufferData3.SysMemPitch = 0;
@@ -806,13 +819,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
 #endif
+		
+	if (LOADED_BEAR)
+	{
+		whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
+		whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
+		whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
+	}
+	else
+	{
+		whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
+		whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
+		whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	}
 
-	whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
-	whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
-	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
-	//whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
-	//whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
-	//whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 
 	int numVerts = whatever::GetVertCount();
 	short* IndexBuffer = whatever::GetShortInd();
@@ -884,9 +904,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelMesh->MeshData.push_back(SampleState1);
 
 	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
-	const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
-	wText = new wchar_t[size1];
-	mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	
+	//Change when bear texture gets added
+	if (LOADED_BEAR)
+	{
+		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		wText = new wchar_t[size1];
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	}
+	else
+	{
+		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		wText = new wchar_t[size1];
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	}
+	
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
 	wText = NULL;
 	delete wText;
