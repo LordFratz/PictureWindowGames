@@ -54,6 +54,8 @@ namespace FBXExporter
 		float startTime;
 		float endTime;
 
+		int SocketIndex = 0;
+
 		//int** BoneVerts = nullptr;
 		//float** WeightVerts = nullptr;
 

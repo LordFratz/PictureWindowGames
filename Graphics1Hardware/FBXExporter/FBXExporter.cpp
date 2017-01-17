@@ -65,12 +65,18 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 FbxAMatrix FBXExporter::FBXExport::ConvertToDirectX(FbxAMatrix mat)
 {
 	//change matrixes in to be DirectX compatible (might be wrong who knows)
-	FbxVector4 translation = mat.GetT();
-	FbxVector4 rotation = mat.GetR();
-	translation.Set(translation.mData[0], translation.mData[1], -translation.mData[2]);
-	rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
-	mat.SetT(translation);
-	mat.SetR(rotation);
+	//FbxVector4 translation = mat.GetT();
+	//FbxVector4 rotation = mat.GetR();
+	//translation.Set(translation.mData[0], translation.mData[1], -translation.mData[2]);
+	//rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
+	//mat.SetT(translation);
+	//mat.SetR(rotation);
+	mat.mData[1].mData[3] = -mat.mData[1].mData[3];
+	mat.mData[2].mData[3] = -mat.mData[2].mData[3];
+	mat.mData[3].mData[1] = -mat.mData[3].mData[1];
+	mat.mData[3].mData[2] = -mat.mData[3].mData[2];
+	mat.mData[3].mData[4] = -mat.mData[3].mData[4];
+	mat.mData[4].mData[3] = -mat.mData[4].mData[3];
 	return mat;
 }
 
@@ -159,6 +165,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 				FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
 				endTime = (float)end.GetSecondDouble();
 				AnimLength = (unsigned int)(end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24));
+				std::vector<KeyFrame> tempFrames;
 				for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); i++) {
 					FbxTime currTime;
 					currTime.SetFrame(i, FbxTime::eFrames24);
@@ -168,7 +175,14 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
 					currAnim.GlobalTransform = ConvertToDirectX(currentTransformOffset.Inverse() * cl->GetLink()->EvaluateGlobalTransform(currTime));
-					frames[ind].push_back(currAnim);
+					tempFrames.push_back(currAnim);
+				}
+				frames[ind] = tempFrames;
+				if (tempFrames.size() <= 0) {
+					SocketIndex += 1;
+				}
+				else {
+					Skeleton[ind].parentIndex += SocketIndex;
 				}
 			}
 		}
