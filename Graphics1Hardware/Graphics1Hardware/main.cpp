@@ -26,13 +26,13 @@ using namespace std;
 #include <DirectXColors.h>
 using namespace DirectX;
 #include "../FBXExporter/IncludeMe.h"
-#include "Trivial_VS.csh"
-#include "Trivial_PS.csh"
-#include "BasicVertexShader.csh"
-#include "BasicPixelShader.csh"
-#include "BasicLitSkinningVertShader.csh"
-#include "BasicToLightVertexShader.csh"
-#include "BasicLightPixelShader.csh"
+//#include "Trivial_VS.csh"
+//#include "Trivial_PS.csh"
+//#include "BasicVertexShader.csh"
+//#include "BasicPixelShader.csh"
+//#include "BasicLitSkinningVertShader.csh"
+//#include "BasicToLightVertexShader.csh"
+//#include "BasicLightPixelShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
@@ -470,10 +470,9 @@ namespace Collisions
 
 namespace GenerateObject
 {
-	void CreateD20(VertexPositionUVWNorm* Mesh, int* Ind) {
-		//generate Verticies for D20
+	VertexPositionUVWNorm* CreateD20Verts() {
 		float t = (1.0f + sqrt(5.0f)) / 2.0f;
-		Mesh = new VertexPositionUVWNorm[12];
+		VertexPositionUVWNorm* Mesh = new VertexPositionUVWNorm[12];
 		Mesh[0].pos = XMFLOAT4(-1, t, 0, 1);
 		Mesh[1].pos = XMFLOAT4(1, t, 0, 1);
 		Mesh[2].pos = XMFLOAT4(-1, -t, 0, 1);
@@ -495,12 +494,15 @@ namespace GenerateObject
 			Mesh[i].pos.y = Mesh[i].pos.y / length;
 			Mesh[i].pos.z = Mesh[i].pos.z / length;
 		}
+		return Mesh;
+	}
 
-		Ind = new int[60];
-		Ind[0]  = 0; Ind[1]  = 11; Ind[2]  = 5;
-		Ind[3]  = 0; Ind[4]  = 5; Ind[5]  = 1;
-		Ind[6]  = 0; Ind[7]  = 1; Ind[8]  = 7;
-		Ind[9]  = 0; Ind[10] = 7; Ind[11] = 10;
+	int* CreateD20Inds() {
+		int* Ind = new int[60];
+		Ind[0] = 0; Ind[1] = 11; Ind[2] = 5;
+		Ind[3] = 0; Ind[4] = 5; Ind[5] = 1;
+		Ind[6] = 0; Ind[7] = 1; Ind[8] = 7;
+		Ind[9] = 0; Ind[10] = 7; Ind[11] = 10;
 		Ind[12] = 0; Ind[13] = 10; Ind[14] = 11;
 
 		Ind[15] = 1; Ind[16] = 5; Ind[17] = 9;
@@ -520,6 +522,7 @@ namespace GenerateObject
 		Ind[51] = 6; Ind[52] = 2; Ind[53] = 10;
 		Ind[54] = 8; Ind[55] = 6; Ind[56] = 7;
 		Ind[57] = 9; Ind[58] = 8; Ind[59] = 1;
+		return Ind;
 	}
 }
 
@@ -600,20 +603,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #if true //use this section once the plane has UVs, normals, and a texture loaded
 	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
 	//auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
-	//std::vector<uint8_t> VSData;
-	//std::vector<uint8_t> PSData;
-	//bool thing = ShaderLoader::LoadShader(VSData, "BasicToLightVertexShader.cso");
-	//thing = ShaderLoader::LoadShader(VSData, "BasicToLightPixelShader.cso");
-	//Device->CreateVertexShader(&VSData[0], VSData.size(), NULL, planeContext->m_vertexShader.GetAddressOf());
-	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
+	std::vector<uint8_t> VSData;
+	std::vector<uint8_t> PSData;
+	bool thing = ShaderLoader::LoadShader(VSData, "BasicToLightVertexShader.cso");
+	thing = ShaderLoader::LoadShader(PSData, "BasicLightPixelShader.cso");
+	Device->CreateVertexShader(&VSData[0], VSData.size(), NULL, planeContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&PSData[0], PSData.size(), NULL, planeContext->m_pixelShader.GetAddressOf());
+	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
+	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "UVW" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORM" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
-	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), planeContext->m_inputLayout.GetAddressOf());
+	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &VSData[0], VSData.size(), planeContext->m_inputLayout.GetAddressOf());
 #else //current plane
 	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
@@ -832,8 +836,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelShape->ShapeData.push_back(new int(numBones));
 	ModelShape->ShapeData.push_back(new bool(false));
 
-	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
+
+	std::vector<uint8_t> VSData2;
+	std::vector<uint8_t> PSData2;
+	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
+	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
+	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	//Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -843,9 +854,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
-	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), ModelContext->m_inputLayout.GetAddressOf());
+	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &VSData2[0], VSData2.size(), ModelContext->m_inputLayout.GetAddressOf());
 
 	//Add temp spheres around here I think
+	//VertexPositionUVWNorm* SphereMesh = GenerateObject::CreateD20Verts();
+	//int* SphereInds = GenerateObject::CreateD20Inds();
 
 	//ModelContext->AddChild(ModelShape);
 	//ModelContext->AddChild(planeContext);
