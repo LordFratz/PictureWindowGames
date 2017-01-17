@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box
-#define LOADED_BEAR 0
+#define LOADED_BEAR 1
 
 struct ViewProj
 {
