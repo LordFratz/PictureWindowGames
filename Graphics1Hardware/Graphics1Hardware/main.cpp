@@ -867,7 +867,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
 	int numBones = whatever::GetBoneCount();
 	float** boneMats = whatever::GetBoneBindMat();
-	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
 	auto parentInd = whatever::GetParentInds();
 	auto animKeyframes = whatever::GetBoneAnimationKeyFrames();
 	auto animtweens = whatever::GetAnimationKeyframeTweens();
@@ -878,10 +877,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMVECTOR blah;
 	for(int i= 0; i < numBones; i++)
 	{
-		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0], boneMats[i][1], boneMats[i][2], boneMats[i][3],
-													boneMats[i][4], boneMats[i][5], boneMats[i][6], boneMats[i][7],
-													boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
-													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+		auto currBind = XMFLOAT4X4(boneMats[i][0], boneMats[i][1], boneMats[i][2], boneMats[i][3],
+								   boneMats[i][4], boneMats[i][5], boneMats[i][6], boneMats[i][7],
+								   boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
+								   boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+
+		XMStoreFloat4x4(&ShapeData1->boneOffsets[i + 1], XMMatrixInverse(nullptr, XMLoadFloat4x4(&currBind)));
+
 		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
 		skele1->Bones.push_back(TransformNode());
 		if(parentInd[i] != -1)

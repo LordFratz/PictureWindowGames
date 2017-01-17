@@ -63,7 +63,7 @@ class Interpolator
 	bool initializedData = false;
 public:
 	Animation* animation;
-	bool KeyboardControl;
+	bool KeyboardControl = true;
 	bool changedLastFrame;
 	currFrame CurrFrame;
 	void Update(float delta)
@@ -122,8 +122,8 @@ public:
 
 
 				CurrFrame.thisFrame.push_back(animation->bones[i].frames[perBoneData[i].prevFrame]);
-				initializedData = true;
 			}
+			initializedData = true;
 		}
 		else
 		{
@@ -171,6 +171,11 @@ class TransformNode
 	TransformNode* parent = nullptr;
 	bool dirty = true;
 public:
+
+	XMMATRIX& getLocal()
+	{
+		return local;
+	}
 
 	XMMATRIX& getWorld()
 	{
@@ -228,7 +233,7 @@ struct Skeleton
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			XMStoreFloat4x4(&offsets[i + 1], Bones[i].getWorld() * InverseBindMats[i] * world);
+			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getLocal());
 		}
 		return offsets;
 	}
