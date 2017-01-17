@@ -49,12 +49,12 @@ namespace FBXExporter
 		std::vector<std::vector<float>> BoneWeights;
 		std::vector<std::vector<KeyFrame>> frames;
 
+		std::vector<int> SocketInds;
+
 		std::vector<Vertexint> BoneVerts;
 		std::vector<Vertex> WeightVerts;
 		float startTime;
 		float endTime;
-
-		int SocketIndex = 0;
 
 		//int** BoneVerts = nullptr;
 		//float** WeightVerts = nullptr;
@@ -71,6 +71,8 @@ namespace FBXExporter
 		void ClearInfo();
 		void ProcessSkeleton(FbxNode* RootNode);
 		void ProcessSkeletonRecur(FbxNode* inNode, int inDepth, int myIndex, int inParentIndex);
+		void GetSocketIndecies();
+		void RemoveSockets();
 		void SetVertToBoneInds();
 		void SetWeightToBoneInds();
 		void ExportToBin(FileInfo::ExporterHeader* Header, const char* filename, const char* Fbxfilename);

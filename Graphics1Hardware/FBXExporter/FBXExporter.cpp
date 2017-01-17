@@ -53,6 +53,8 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 		ProcessSkeleton(RootNode);
 		ExportFBX(RootNode);
 		if (!NotLoadingMeshData) {
+			GetSocketIndecies();
+			RemoveSockets();
 			SetVertToBoneInds();
 			SetWeightToBoneInds();
 		}
@@ -178,12 +180,6 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 					tempFrames.push_back(currAnim);
 				}
 				frames[ind] = tempFrames;
-				if (tempFrames.size() <= 0) {
-					SocketIndex += 1;
-				}
-				else {
-					Skeleton[ind].parentIndex += SocketIndex;
-				}
 			}
 		}
 	}
@@ -213,6 +209,7 @@ void FBXExporter::FBXExport::ClearInfo()
 	frames.clear();
 	BoneVertInds.clear();
 	BoneWeights.clear();
+	SocketInds.clear();
 	if (!NotLoadingMeshData) {
 		BoneVerts.clear();
 		WeightVerts.clear();
@@ -252,6 +249,52 @@ void FBXExporter::FBXExport::ProcessSkeletonRecur(FbxNode * inNode, int inDepth,
 	{
 		ProcessSkeletonRecur(inNode->GetChild(i), inDepth + 1, (int)Skeleton.size(), myIndex);
 	}
+}
+
+void FBXExporter::FBXExport::GetSocketIndecies()
+{
+	for (int i = 0; i < frames.size(); i++) {
+		if (frames[i].size() <= 0) {
+			SocketInds.push_back(i);
+		}
+	}
+}
+
+void FBXExporter::FBXExport::RemoveSockets()
+{
+	std::vector<std::vector<KeyFrame>> RS;
+	std::vector<std::vector<int>> VS;
+	std::vector<std::vector<float>> WS;
+	std::vector<Bone> SS;
+	std::vector<std::string> BS;
+	int adj = 0;
+	bool bad = false;
+	for (int i = 0; i < Skeleton.size(); i++) {
+		for (int e = 0; e < SocketInds.size(); e++) {
+			if (i == SocketInds[e]) {
+				bad = true;
+			}
+			if (Skeleton[i].parentIndex > SocketInds[e]) {
+				adj++;
+			}
+		}
+		if (!bad) {
+			Bone tempBone = Skeleton[i];
+			tempBone.parentIndex -= adj;
+			SS.push_back(tempBone);
+			BS.push_back(boneNames[i]);
+			RS.push_back(frames[i]);
+			VS.push_back(BoneVertInds[i]);
+			WS.push_back(BoneWeights[i]);
+		}
+		bad = false;
+		adj = 0;
+	}
+	boneNames = BS;
+	Skeleton = SS;
+	frames = RS;
+	BoneVertInds = VS;
+	BoneWeights = WS;
 }
 
 void FBXExporter::FBXExport::SetVertToBoneInds()

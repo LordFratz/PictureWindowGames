@@ -33,17 +33,26 @@ using namespace DirectX;
 //#include "BasicLitSkinningVertShader.csh"
 //#include "BasicToLightVertexShader.csh"
 //#include "BasicLightPixelShader.csh"
+#include "BasicGeometryShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
 
+//define 1 for bear, 0 for box
+#define LOADED_BEAR 0
+
 struct ViewProj
 {
 	XMFLOAT4X4 view;
 	XMFLOAT4X4 projection;
 	XMFLOAT4 cameraPos;
+};
+
+struct AnimInstances
+{
+	XMFLOAT4X4 instances[3];
 };
 
 struct DirectionalLight
@@ -117,8 +126,8 @@ public:
 
 	void update(float delta)
 	{
-		float cameraSpeed = 0.5f * delta; // * a delta time when time is added
-		float cameraRotateSpeed = 5.0f * cameraSpeed;
+		float cameraSpeed = 15.0f * delta; // * a delta time when time is added
+		float cameraRotateSpeed = 3.0f * cameraSpeed;
 		GetCursorPos(&currCursor);
 		if (GetAsyncKeyState(87))
 			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, 0.0f, cameraSpeed));
@@ -158,6 +167,7 @@ public:
 
 static Camera* CurrCamera;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
+static Microsoft::WRL::ComPtr<ID3D11Buffer> InstanceBuff;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -201,6 +211,7 @@ class DEMO_APP
 
 	//added for dynamic light
 	DirectionalLight dynaLight;
+	AnimInstances animInstances;
 	//added for camera
 
 public:
@@ -216,6 +227,49 @@ public:
 
 namespace
 {
+	void ModelGeoInstancedContext(RenderNode& rNode)
+	{
+		auto Node = &(RenderContext&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+		context->IASetInputLayout(Node->m_inputLayout.Get());
+		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
+		context->GSSetShader(Node->m_geometryShader.Get(), nullptr, 0);
+		context->PSSetShader(Node->m_pixelShader.Get(), nullptr, 0);
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
+		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
+		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->PSSetConstantBuffers(2, 1, LightBuff.GetAddressOf());
+		context->GSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->GSSetConstantBuffers(5, 1, InstanceBuff.GetAddressOf());
+	}
+
+	void SkinnedGeoInstancedShape(RenderNode &rNode)
+	{
+		auto Node = &(RenderShape&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, (BoxSkinnedConstBuff*)Node->ShapeData[0], 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+
+		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(SkinnedVert);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
+		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
+		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
+
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+
 	/// <summary>
 	/// Generic TEXTURELESS RenderContext Function
 	/// </summary>
@@ -228,6 +282,7 @@ namespace
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
 		context->PSSetShader(Node->m_pixelShader.Get(), nullptr, 0);
+		context->GSSetShader(nullptr, nullptr, 0);
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData,0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
@@ -718,6 +773,29 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData2, LightBuff.GetAddressOf());
 	//end light initializations
 
+	//instance initializations
+	if (LOADED_BEAR)
+	{
+		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(0.0f, 0.0f, 0.0f))));
+		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(5.0f, 0.0f, 1.0f))));
+		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(-5.0f, 0.0f, -1.0f))));
+	}
+	else
+	{
+		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f)));
+		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 1.0f)));
+		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixTranslation(-5.0f, 0.0f, -1.0f)));
+	}
+
+	D3D11_SUBRESOURCE_DATA BufferData3 = { 0 };
+	BufferData3.pSysMem = &animInstances;
+	BufferData3.SysMemPitch = 0;
+	BufferData3.SysMemSlicePitch = 0;
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(AnimInstances), D3D11_BIND_CONSTANT_BUFFER);
+	Device->CreateBuffer(&constBuffDesc, &BufferData3, InstanceBuff.GetAddressOf());
+	//end instance initializations
+
+
 	auto SampleState = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -761,13 +839,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData, planeMesh->m_indexBuffer.GetAddressOf());
 	//End Plane Init
 #endif
+		
+	if (LOADED_BEAR)
+	{
+		whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
+		whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
+		whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
+	}
+	else
+	{
+		whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
+		whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
+		whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	}
 
-	whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
-	whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
-	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
-	//whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
-	//whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
-	//whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 
 	int numVerts = whatever::GetVertCount();
 	short* IndexBuffer = whatever::GetShortInd();
@@ -798,10 +883,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		SkinnedVertexBuffer[i] = Temp;
 	}
 	//TODO: Read down from here, follow step by step instatiation of ModelMesh and ModelShape to set up SphereMesh and SphereShape
-	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -838,9 +924,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelMesh->MeshData.push_back(SampleState1);
 
 	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
-	const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
-	wText = new wchar_t[size1];
-	mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	
+	//Change when bear texture gets added
+	if (LOADED_BEAR)
+	{
+		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		wText = new wchar_t[size1];
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	}
+	else
+	{
+		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
+		wText = new wchar_t[size1];
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	}
+	
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
 	wText = NULL;
 	delete wText;
@@ -887,7 +985,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
 	int numBones = whatever::GetBoneCount();
 	float** boneMats = whatever::GetBoneBindMat();
-	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
 	auto parentInd = whatever::GetParentInds();
 	auto animKeyframes = whatever::GetBoneAnimationKeyFrames();
 	auto animtweens = whatever::GetAnimationKeyframeTweens();
@@ -898,10 +995,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMVECTOR blah;
 	for(int i= 0; i < numBones; i++)
 	{
-		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0], boneMats[i][1], boneMats[i][2], boneMats[i][3],
-													boneMats[i][4], boneMats[i][5], boneMats[i][6], boneMats[i][7],
-													boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
-													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+		auto currBind = XMFLOAT4X4(boneMats[i][0], boneMats[i][1], boneMats[i][2], boneMats[i][3],
+								   boneMats[i][4], boneMats[i][5], boneMats[i][6], boneMats[i][7],
+								   boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
+								   boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+
+		XMStoreFloat4x4(&ShapeData1->boneOffsets[i + 1], XMMatrixInverse(nullptr, XMLoadFloat4x4(&currBind)));
+
 		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
 		skele1->Bones.push_back(TransformNode());
 		if(parentInd[i] != -1)
@@ -959,14 +1059,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-
 	std::vector<uint8_t> VSData2;
 	std::vector<uint8_t> PSData2;
+	std::vector<uint8_t> GSData;
 	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
 	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
+	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
 	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	Device->CreateGeometryShader(&GSData[0], GSData.size(), NULL, ModelContext->m_geometryShader.GetAddressOf());
 	//Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	//Device->CreateGeometryShader(&BasicGeometryShader, ARRAYSIZE(BasicGeometryShader), NULL, ModelContext->m_geometryShader.GetAddressOf());
 	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
