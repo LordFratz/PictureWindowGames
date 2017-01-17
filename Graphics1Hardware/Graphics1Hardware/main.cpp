@@ -411,6 +411,32 @@ namespace
 		delete toClean[5];
 		delete toClean[6];
 	}
+
+	void ProperSkinnedUpdate(RenderShape &Node, float delta)
+	{
+		auto bufferData = (BoxSkinnedConstBuff*)Node.ShapeData[0];
+		auto interpolator = (Interpolator*)Node.ShapeData[1];
+		auto skeleton = (Skeleton*)Node.ShapeData[2];
+		auto anim = (Animation*)Node.ShapeData[3];
+
+		interpolator->Update(delta);
+		auto data = skeleton->getBoneOffsets(interpolator->CurrFrame, XMLoadFloat4x4(&Node.WorldMat));
+		bufferData->worldMatrix = Node.WorldMat;
+		for(int i = 0; i < interpolator->animation->bones.size(); i++)
+		{
+			bufferData->boneOffsets[i + 1] = data[i];
+		}
+		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
+		delete[] data;
+	}
+
+	void CleanProperSkinnedUpdate(vector<void*> toClean)
+	{
+		delete toClean[0];
+		delete toClean[1];
+		delete toClean[2];
+		delete toClean[3];
+	}
 }
 
 
@@ -751,7 +777,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanSkinnedUpdates, SkinnedUpdate);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -795,7 +821,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	wText = NULL;
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
-
+#if 0
 	auto ShapeData1 = new BoxSkinnedConstBuff;
 	ShapeData1->worldMatrix = ModelShape->WorldMat;
 	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
@@ -804,7 +830,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	float** boneMats = whatever::GetBoneBindMat();
 	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
 	XMFLOAT4X4** allBoneMats = new XMFLOAT4X4*[numBones];
-	Animation anim1 = Animation();
 	for (int i = 0; i < numBones; i++)
 	{
 		allBoneMats[i] = new XMFLOAT4X4[numKeyframes + 1];
@@ -832,6 +857,83 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelShape->ShapeData.push_back(new int(0));
 	ModelShape->ShapeData.push_back(new int(numBones));
 	ModelShape->ShapeData.push_back(new bool(false));
+#else
+	auto ShapeData1 = new BoxSkinnedConstBuff;
+	ShapeData1->worldMatrix = ModelShape->WorldMat;
+	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
+	int numBones = whatever::GetBoneCount();
+	float** boneMats = whatever::GetBoneBindMat();
+	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
+	auto parentInd = whatever::GetParentInds();
+	auto animKeyframes = whatever::GetBoneAnimationKeyFrames();
+	auto animtweens = whatever::GetAnimationKeyframeTweens();
+	Animation* anim1 = new Animation();
+	Skeleton* skele1 = new Skeleton();
+	skele1->Bones.reserve(numBones);
+	auto identity = XMMatrixIdentity();
+	XMVECTOR blah;
+	for(int i= 0; i < numBones; i++)
+	{
+		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0], boneMats[i][1], boneMats[i][2], boneMats[i][3],
+													boneMats[i][4], boneMats[i][5], boneMats[i][6], boneMats[i][7],
+													boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
+													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
+		skele1->Bones.push_back(TransformNode());
+		if(parentInd[i] != -1)
+		{
+			skele1->Bones[i].addParent(&skele1->Bones[parentInd[i]]);
+		}
+		skele1->Bones[i].setLocal(identity);
+		anim1->bones.push_back(Bone());
+		auto keyFrameCount = whatever::GetKeyFrameAmount(i);
+		if(keyFrameCount > 2)
+		{
+			for(int j = 0; j < keyFrameCount; j++)
+			{
+				anim1->bones[i].frames.push_back(Keyframe());
+				anim1->bones[i].frames[j].tweenTime = animtweens[i][j];
+				auto tempMat = XMFLOAT4X4(animKeyframes[i][j * 16 + 0], animKeyframes[i][j * 16 + 1], animKeyframes[i][j * 16 + 2], animKeyframes[i][j * 16 + 3],
+										  animKeyframes[i][j * 16 + 4], animKeyframes[i][j * 16 + 5], animKeyframes[i][j * 16 + 6], animKeyframes[i][j * 16 + 7],
+										  animKeyframes[i][j * 16 + 8], animKeyframes[i][j * 16 + 9], animKeyframes[i][j * 16 + 10], animKeyframes[i][j * 16 + 11],
+										  animKeyframes[i][j * 16 + 12], animKeyframes[i][j * 16 + 13], animKeyframes[i][j * 16 + 14], animKeyframes[i][j * 16 + 15]);
+				XMMatrixDecompose(&blah, &anim1->bones[i].frames[j].rotation, &anim1->bones[i].frames[j].position, XMLoadFloat4x4(&tempMat));
+			}
+		}
+		else if(keyFrameCount == 0)
+		{
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[0].rotation, &anim1->bones[i].frames[0].position, identity);
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[1].rotation, &anim1->bones[i].frames[1].position, identity);
+		}
+		else
+		{
+			//HOW THE HECK DO YOU ONLY HAVE 1 ANIMATION FRAME?!?
+			auto tempMat = XMFLOAT4X4(animKeyframes[i][0],  animKeyframes[i][1],  animKeyframes[i][2],  animKeyframes[i][3],
+									  animKeyframes[i][4],  animKeyframes[i][5],  animKeyframes[i][6],  animKeyframes[i][7],
+									  animKeyframes[i][8],  animKeyframes[i][9],  animKeyframes[i][10], animKeyframes[i][11],
+									  animKeyframes[i][12], animKeyframes[i][13], animKeyframes[i][14], animKeyframes[i][15]);
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[0].rotation, &anim1->bones[i].frames[0].position, XMLoadFloat4x4(&tempMat));
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[1].rotation, &anim1->bones[i].frames[1].position, XMLoadFloat4x4(&tempMat));
+		}
+	}
+	Interpolator* interpolator = new Interpolator();
+	interpolator->animation = anim1;
+	ModelShape->ShapeData.push_back(ShapeData1);
+	ModelShape->ShapeData.push_back(interpolator);
+	ModelShape->ShapeData.push_back(skele1);
+	ModelShape->ShapeData.push_back(anim1);
+
+#endif
+
+
 
 	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
@@ -848,15 +950,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	//Add temp spheres around here I think
 
-	//ModelContext->AddChild(ModelShape);
-	//ModelContext->AddChild(planeContext);
-	//ModelContext->AddChild(planeShape);
+	ModelContext->AddChild(ModelShape);
+	ModelContext->AddChild(planeContext);
+	ModelContext->AddChild(planeShape);
 
-	planeContext->AddChild(planeShape);
-	planeContext->AddChild(ModelContext);
-	planeContext->AddChild(ModelShape);
+	//planeContext->AddChild(planeShape);
+	//planeContext->AddChild(ModelContext);
+	//planeContext->AddChild(ModelShape);
 	Set = RenderSet();
-	Set.SetHead(planeContext);
+	Set.SetHead(ModelContext);
 
 	CurrCamera = new Camera;
 	CurrCamera->init(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT);
@@ -879,10 +981,12 @@ bool DEMO_APP::Run()
 	CurrCamera->update(delta);
 	ModelShape->Update(delta);
 
-	dContext->OMSetRenderTargets(1, &targetView, NULL);
+	dContext->OMSetRenderTargets(1, &targetView, devResources->GetDepthStencilView());
 	dContext->RSSetViewports(1, &viewport);
 	FLOAT color[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	dContext->ClearRenderTargetView(targetView, color);
+	dContext->ClearDepthStencilView(devResources->GetDepthStencilView(), D3D10_CLEAR_DEPTH, 1, 1);
+	dContext->OMSetDepthStencilState(devResources->GetDepthStencilState(), 0);
 
 	Renderer::Render(&Set);
 	swapChain->Present(0, 0);

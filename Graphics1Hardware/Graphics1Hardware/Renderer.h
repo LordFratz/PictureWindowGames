@@ -68,6 +68,7 @@ public:
 	currFrame CurrFrame;
 	void Update(float delta)
 	{
+		CurrFrame = currFrame();
 		if(KeyboardControl)
 		{
 			int moveDir = 0;
@@ -75,15 +76,22 @@ public:
 			{
 				if(!changedLastFrame)
 					moveDir = 1;
+				changedLastFrame = true;
 			}
 			else if(GetAsyncKeyState(0x50))
 			{
 				if(!changedLastFrame)
 					moveDir = -1;
+				changedLastFrame = true;
 			}
 			else
 			{
 				changedLastFrame = false;
+			}
+
+			if (GetAsyncKeyState(0x49)) //i
+			{
+				KeyboardControl = false;
 			}
 			for(int i = 0; i < animation->bones.size(); i++)
 			{
@@ -93,30 +101,28 @@ public:
 				}
 				perBoneData[i].prevFrame += moveDir;
 				perBoneData[i].nextFrame += moveDir;
-				if(perBoneData[i].nextFrame > animation->bones.size())
+
+				if (perBoneData[i].nextFrame < 0)
+				{
+					perBoneData[i].nextFrame = (int)animation->bones[i].frames.size() - 1;
+				}
+				else if(perBoneData[i].nextFrame > animation->bones[i].frames.size() - 1)
 				{
 					perBoneData[i].nextFrame = 0;
 				}
-				else if(perBoneData[i].nextFrame < 0)
+
+				if (perBoneData[i].prevFrame < 0)
 				{
-					perBoneData[i].nextFrame = (int)animation->bones.size() - 1;
+					perBoneData[i].prevFrame = (int)animation->bones[i].frames.size() - 1;
 				}
-				if (perBoneData[i].prevFrame > animation->bones.size())
+				else if (perBoneData[i].prevFrame > animation->bones[i].frames.size() - 1)
 				{
 					perBoneData[i].prevFrame = 0;
 				}
-				else if (perBoneData[i].prevFrame < 0)
-				{
-					perBoneData[i].prevFrame = (int)animation->bones.size() - 1;
-				}
+
 
 				CurrFrame.thisFrame.push_back(animation->bones[i].frames[perBoneData[i].prevFrame]);
 				initializedData = true;
-			}
-
-			if (GetAsyncKeyState(0x49)) //i
-			{
-				KeyboardControl = false;
 			}
 		}
 		else
@@ -125,7 +131,6 @@ public:
 			{
 				KeyboardControl = true;
 			}
-			CurrFrame = currFrame();
 			for(int i = 0; i < animation->bones.size(); i++)
 			{
 				if (!initializedData)
@@ -137,7 +142,7 @@ public:
 				{
 					perBoneData[i].frameTime -= animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
 					perBoneData[i].prevFrame = perBoneData[i].nextFrame++;
-					if(perBoneData[i].nextFrame > animation->bones[i].frames.size())
+					if(perBoneData[i].nextFrame > animation->bones[i].frames.size() - 1)
 					{
 						perBoneData[i].nextFrame = 0;
 					}
@@ -145,6 +150,7 @@ public:
 				float tweenDelta = perBoneData[i].frameTime / animation->bones[i].frames[perBoneData[i].prevFrame].tweenTime;
 				CurrFrame.thisFrame.push_back(Interpolate(animation->bones[i].frames[perBoneData[i].prevFrame], animation->bones[i].frames[perBoneData[i].nextFrame], tweenDelta));
 			}
+			initializedData = true;
 		}
 	}
 
@@ -159,7 +165,7 @@ public:
 
 class TransformNode
 {
-	std::vector<TransformNode*> children;
+	std::vector<TransformNode*> children = std::vector<TransformNode*>();
 	XMMATRIX local;
 	XMMATRIX world;
 	TransformNode* parent = nullptr;

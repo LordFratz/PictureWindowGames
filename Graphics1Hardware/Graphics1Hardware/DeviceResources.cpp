@@ -70,6 +70,30 @@ void DeviceResources::initialize(int sWidth, int sHeight, HWND window)
 	m_screenViewport.Height = (FLOAT)sHeight;
 
 	m_d3dContext->RSSetViewports(1, &m_screenViewport);
+
+	CD3D11_TEXTURE2D_DESC depthStencilDesc(
+		DXGI_FORMAT_D24_UNORM_S8_UINT,
+		lround(m_screenViewport.Width),
+		lround(m_screenViewport.Height),
+		1, // This depth stencil view has only one texture.
+		1, // Use a single mipmap level.
+		D3D11_BIND_DEPTH_STENCIL
+	);
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencil;
+	m_d3dDevice->CreateTexture2D(
+		&depthStencilDesc,
+		nullptr,
+		depthStencil.GetAddressOf()
+	);
+
+	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+	m_d3dDevice->CreateDepthStencilView(
+		depthStencil.Get(),
+		&depthStencilViewDesc,
+		m_d3dDepthStencilView.GetAddressOf()
+	);
+
 	D3D11_DEPTH_STENCIL_DESC StateDesc;
 	StateDesc.DepthEnable = true;
 	StateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
@@ -85,7 +109,7 @@ void DeviceResources::initialize(int sWidth, int sHeight, HWND window)
 	StateDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 	StateDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 	StateDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	m_d3dDevice->CreateDepthStencilState(&StateDesc, &m_d3dDepthStencilState);
+	m_d3dDevice->CreateDepthStencilState(&StateDesc, m_d3dDepthStencilState.GetAddressOf());
 
 	ID3D11Debug *d3dDebug = nullptr;
 	if (SUCCEEDED(m_d3dDevice.Get()->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))

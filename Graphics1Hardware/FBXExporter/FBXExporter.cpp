@@ -42,7 +42,7 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 		Header = new FileInfo::ExporterHeader(FileInfo::FILE_TYPES::ANIMATION, Fbxfilename);
 		NotLoadingMeshData = true;
 	}
-	
+
 	if (Header->ReadHeader(&file, filename, Fbxfilename)) {
 		ReadInBin(Header, file, filename);
 		NotLoadingMeshData = true;
@@ -155,15 +155,15 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 				CurrentAnimName = animStackName.Buffer();
 				FbxTakeInfo* takeInfo = Scene->GetTakeInfo(animStackName);
 				FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
-				startTime = (float)start.GetMilliSeconds();
+				startTime = (float)start.GetSecondDouble();
 				FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
-				endTime = (float)end.GetMilliSeconds();
+				endTime = (float)end.GetSecondDouble();
 				AnimLength = (unsigned int)(end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24));
 				for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); i++) {
 					FbxTime currTime;
 					currTime.SetFrame(i, FbxTime::eFrames24);
 					KeyFrame currAnim;
-					currAnim.timeStamp = (float)currTime.GetMilliSeconds();
+					currAnim.timeStamp = (float)currTime.GetSecondDouble();
 					currAnim.FrameNum = i;
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
