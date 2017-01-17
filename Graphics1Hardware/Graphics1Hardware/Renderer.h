@@ -280,6 +280,7 @@ public:
 	std::shared_ptr<DeviceResources> m_deviceResources;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
+	Microsoft::WRL::ComPtr<ID3D11GeometryShader> m_geometryShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
 	std::vector<void*> ContextData;
 	CleanupFunc cFunc;
@@ -296,6 +297,7 @@ public:
 		m_vertexShader.Reset();
 		m_pixelShader.Reset();
 		m_inputLayout.Reset();
+		m_geometryShader.Reset();
 		cFunc(ContextData);
 	}
 };

@@ -33,6 +33,7 @@ using namespace DirectX;
 //#include "BasicLitSkinningVertShader.csh"
 //#include "BasicToLightVertexShader.csh"
 //#include "BasicLightPixelShader.csh"
+#include "BasicGeometryShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
@@ -44,6 +45,11 @@ struct ViewProj
 	XMFLOAT4X4 view;
 	XMFLOAT4X4 projection;
 	XMFLOAT4 cameraPos;
+};
+
+struct AnimInstances
+{
+	XMFLOAT4X4 instances[3];
 };
 
 struct DirectionalLight
@@ -117,8 +123,8 @@ public:
 
 	void update(float delta)
 	{
-		float cameraSpeed = 0.5f * delta; // * a delta time when time is added
-		float cameraRotateSpeed = 5.0f * cameraSpeed;
+		float cameraSpeed = 15.0f * delta; // * a delta time when time is added
+		float cameraRotateSpeed = 3.0f * cameraSpeed;
 		GetCursorPos(&currCursor);
 		if (GetAsyncKeyState(87))
 			viewMatrix = XMMatrixMultiply(viewMatrix, XMMatrixTranslation(0.0f, 0.0f, cameraSpeed));
@@ -158,6 +164,7 @@ public:
 
 static Camera* CurrCamera;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
+static Microsoft::WRL::ComPtr<ID3D11Buffer> InstanceBuff;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -201,6 +208,7 @@ class DEMO_APP
 
 	//added for dynamic light
 	DirectionalLight dynaLight;
+	AnimInstances animInstances;
 	//added for camera
 
 public:
@@ -216,6 +224,49 @@ public:
 
 namespace
 {
+	void ModelGeoInstancedContext(RenderNode& rNode)
+	{
+		auto Node = &(RenderContext&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+		context->IASetInputLayout(Node->m_inputLayout.Get());
+		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
+		context->GSSetShader(Node->m_geometryShader.Get(), nullptr, 0);
+		context->PSSetShader(Node->m_pixelShader.Get(), nullptr, 0);
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
+		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
+		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->PSSetConstantBuffers(2, 1, LightBuff.GetAddressOf());
+		context->GSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->GSSetConstantBuffers(5, 1, InstanceBuff.GetAddressOf());
+	}
+
+	void SkinnedGeoInstancedShape(RenderNode &rNode)
+	{
+		auto Node = &(RenderShape&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, (BoxSkinnedConstBuff*)Node->ShapeData[0], 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+		
+		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(SkinnedVert);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
+		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
+		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
+
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+
 	/// <summary>
 	/// Generic TEXTURELESS RenderContext Function
 	/// </summary>
@@ -228,6 +279,7 @@ namespace
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
 		context->PSSetShader(Node->m_pixelShader.Get(), nullptr, 0);
+		context->GSSetShader(nullptr, nullptr, 0);
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData,0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
@@ -698,6 +750,19 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateBuffer(&constBuffDesc, &BufferData2, LightBuff.GetAddressOf());
 	//end light initializations
 
+	//instance initializations
+	XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranslation(0.0f, 0.0f, 0.0f));
+	XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 0.0f)));
+	XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixTranslation(-5.0f, 0.0f, 0.0f)));
+	D3D11_SUBRESOURCE_DATA BufferData3 = { 0 };
+	BufferData3.pSysMem = &animInstances;
+	BufferData3.SysMemPitch = 0;
+	BufferData3.SysMemSlicePitch = 0;
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(AnimInstances), D3D11_BIND_CONSTANT_BUFFER);
+	Device->CreateBuffer(&constBuffDesc, &BufferData3, InstanceBuff.GetAddressOf());
+	//end instance initializations
+	
+	
 	auto SampleState = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -778,10 +843,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		SkinnedVertexBuffer[i] = Temp;
 	}
 
-	ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *planeContext, mat, sphere(), SkinnedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -941,14 +1007,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-
 	std::vector<uint8_t> VSData2;
 	std::vector<uint8_t> PSData2;
+	std::vector<uint8_t> GSData;
 	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
 	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
+	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
 	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	Device->CreateGeometryShader(&GSData[0], GSData.size(), NULL, ModelContext->m_geometryShader.GetAddressOf());
 	//Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	//Device->CreateGeometryShader(&BasicGeometryShader, ARRAYSIZE(BasicGeometryShader), NULL, ModelContext->m_geometryShader.GetAddressOf());
 	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{

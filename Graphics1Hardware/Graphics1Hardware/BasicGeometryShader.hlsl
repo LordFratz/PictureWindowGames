@@ -69,6 +69,19 @@ output.Append(Quad[i]);
 }
 */
 
+
+cbuffer WorldBuffer : register(b0)
+{
+	matrix worldMatrix;
+};
+
+cbuffer ViewProjectionBuffer : register(b1)
+{
+	matrix view;
+	matrix projection;
+	float4 cameraPosition;
+}
+
 //PixelShaderInput
 struct GSOutput
 {
@@ -107,7 +120,56 @@ void main(
 	for (uint i = 0; i < 3; i++)
 	{
 		GSOutput element = input[i];
-		element.pos = mul(input[i].pos, transforms[index]);
+		float4 pos = input[i].pos;
+		pos.w = 1.0f;
+		pos = mul(pos, transforms[index]);
+		pos = mul(pos, worldMatrix);
+		element.surfacePos = pos;
+		pos = mul(pos, view);
+		pos = mul(pos, projection);
+		element.pos = pos;
+		
+		pos = input[i].norm;
+		pos.w = 1.0f;
+		pos = mul(pos, worldMatrix);
+		element.norm = pos;
+		pos.x = cameraPosition.x;
+		pos.y = cameraPosition.y;
+		pos.z = cameraPosition.z;
+		element.cameraPos = pos;
+
 		output.Append(element);
+
+	/*	PixelShaderInput output;
+		float4 skinnedPos = float4(0.0f, 0.0f, 0.0f, 1.0);
+		input.pos.w = 1.0f;
+
+		skinnedPos += input.boneWeights[0] * mul(input.pos, boneOffsets[input.boneIndices[0]]);
+		skinnedPos += input.boneWeights[1] * mul(input.pos, boneOffsets[input.boneIndices[1]]);
+		skinnedPos += input.boneWeights[2] * mul(input.pos, boneOffsets[input.boneIndices[2]]);
+		skinnedPos += input.boneWeights[3] * mul(input.pos, boneOffsets[input.boneIndices[3]]);
+		skinnedPos.w = 1.0f;
+
+		float4 pos = output.surfacePos = mul(skinnedPos, worldMatrix);
+		pos = mul(pos, view);
+		pos = mul(pos, projection);
+		output.pos = pos;
+
+		pos = input.norm;
+		pos.w = 1.0f;
+		pos = mul(pos, worldMatrix);
+		output.norm = pos;
+
+		pos.x = cameraPosition.x;
+		pos.y = cameraPosition.y;
+		pos.z = cameraPosition.z;
+		output.cameraPos = pos;
+
+		output.uvw = input.uvw;
+
+		return output;*/
+
+
+
 	}
 }
