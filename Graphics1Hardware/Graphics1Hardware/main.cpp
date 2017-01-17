@@ -26,13 +26,13 @@ using namespace std;
 #include <DirectXColors.h>
 using namespace DirectX;
 #include "../FBXExporter/IncludeMe.h"
-#include "Trivial_VS.csh"
-#include "Trivial_PS.csh"
-#include "BasicVertexShader.csh"
-#include "BasicPixelShader.csh"
-#include "BasicLitSkinningVertShader.csh"
-#include "BasicToLightVertexShader.csh"
-#include "BasicLightPixelShader.csh"
+//#include "Trivial_VS.csh"
+//#include "Trivial_PS.csh"
+//#include "BasicVertexShader.csh"
+//#include "BasicPixelShader.csh"
+//#include "BasicLitSkinningVertShader.csh"
+//#include "BasicToLightVertexShader.csh"
+//#include "BasicLightPixelShader.csh"
 #include "BasicGeometryShader.csh"
 #include "DeviceResources.h"
 #include "Renderer.h"
@@ -463,6 +463,32 @@ namespace
 		delete toClean[5];
 		delete toClean[6];
 	}
+
+	void ProperSkinnedUpdate(RenderShape &Node, float delta)
+	{
+		auto bufferData = (BoxSkinnedConstBuff*)Node.ShapeData[0];
+		auto interpolator = (Interpolator*)Node.ShapeData[1];
+		auto skeleton = (Skeleton*)Node.ShapeData[2];
+		auto anim = (Animation*)Node.ShapeData[3];
+
+		interpolator->Update(delta);
+		auto data = skeleton->getBoneOffsets(interpolator->CurrFrame, XMLoadFloat4x4(&Node.WorldMat));
+		bufferData->worldMatrix = Node.WorldMat;
+		for(int i = 0; i < interpolator->animation->bones.size(); i++)
+		{
+			bufferData->boneOffsets[i + 1] = data[i];
+		}
+		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
+		delete[] data;
+	}
+
+	void CleanProperSkinnedUpdate(vector<void*> toClean)
+	{
+		delete toClean[0];
+		delete toClean[1];
+		delete toClean[2];
+		delete toClean[3];
+	}
 }
 
 
@@ -522,10 +548,9 @@ namespace Collisions
 
 namespace GenerateObject
 {
-	void CreateD20(VertexPositionUVWNorm* Mesh, int* Ind) {
-		//generate Verticies for D20
+	VertexPositionUVWNorm* CreateD20Verts() {
 		float t = (1.0f + sqrt(5.0f)) / 2.0f;
-		Mesh = new VertexPositionUVWNorm[12];
+		VertexPositionUVWNorm* Mesh = new VertexPositionUVWNorm[12];
 		Mesh[0].pos = XMFLOAT4(-1, t, 0, 1);
 		Mesh[1].pos = XMFLOAT4(1, t, 0, 1);
 		Mesh[2].pos = XMFLOAT4(-1, -t, 0, 1);
@@ -547,12 +572,15 @@ namespace GenerateObject
 			Mesh[i].pos.y = Mesh[i].pos.y / length;
 			Mesh[i].pos.z = Mesh[i].pos.z / length;
 		}
+		return Mesh;
+	}
 
-		Ind = new int[60];
-		Ind[0]  = 0; Ind[1]  = 11; Ind[2]  = 5;
-		Ind[3]  = 0; Ind[4]  = 5; Ind[5]  = 1;
-		Ind[6]  = 0; Ind[7]  = 1; Ind[8]  = 7;
-		Ind[9]  = 0; Ind[10] = 7; Ind[11] = 10;
+	int* CreateD20Inds() {
+		int* Ind = new int[60];
+		Ind[0] = 0; Ind[1] = 11; Ind[2] = 5;
+		Ind[3] = 0; Ind[4] = 5; Ind[5] = 1;
+		Ind[6] = 0; Ind[7] = 1; Ind[8] = 7;
+		Ind[9] = 0; Ind[10] = 7; Ind[11] = 10;
 		Ind[12] = 0; Ind[13] = 10; Ind[14] = 11;
 
 		Ind[15] = 1; Ind[16] = 5; Ind[17] = 9;
@@ -572,6 +600,7 @@ namespace GenerateObject
 		Ind[51] = 6; Ind[52] = 2; Ind[53] = 10;
 		Ind[54] = 8; Ind[55] = 6; Ind[56] = 7;
 		Ind[57] = 9; Ind[58] = 8; Ind[59] = 1;
+		return Ind;
 	}
 }
 
@@ -652,20 +681,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #if true //use this section once the plane has UVs, normals, and a texture loaded
 	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
 	//auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
-	//std::vector<uint8_t> VSData;
-	//std::vector<uint8_t> PSData;
-	//bool thing = ShaderLoader::LoadShader(VSData, "BasicToLightVertexShader.cso");
-	//thing = ShaderLoader::LoadShader(VSData, "BasicToLightPixelShader.cso");
-	//Device->CreateVertexShader(&VSData[0], VSData.size(), NULL, planeContext->m_vertexShader.GetAddressOf());
-	Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
+	std::vector<uint8_t> VSData;
+	std::vector<uint8_t> PSData;
+	bool thing = ShaderLoader::LoadShader(VSData, "BasicToLightVertexShader.cso");
+	thing = ShaderLoader::LoadShader(PSData, "BasicLightPixelShader.cso");
+	Device->CreateVertexShader(&VSData[0], VSData.size(), NULL, planeContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&PSData[0], PSData.size(), NULL, planeContext->m_pixelShader.GetAddressOf());
+	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
+	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "UVW" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORM" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
-	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), planeContext->m_inputLayout.GetAddressOf());
+	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &VSData[0], VSData.size(), planeContext->m_inputLayout.GetAddressOf());
 #else //current plane
 	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
@@ -817,7 +847,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanSkinnedUpdates, SkinnedUpdate); // was SkinnedShape instead of SkinnedGeoInstancedShape
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -861,7 +891,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	wText = NULL;
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
-
+#if 0
 	auto ShapeData1 = new BoxSkinnedConstBuff;
 	ShapeData1->worldMatrix = ModelShape->WorldMat;
 	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
@@ -897,10 +927,96 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelShape->ShapeData.push_back(new int(0));
 	ModelShape->ShapeData.push_back(new int(numBones));
 	ModelShape->ShapeData.push_back(new bool(false));
+#else
+	auto ShapeData1 = new BoxSkinnedConstBuff;
+	ShapeData1->worldMatrix = ModelShape->WorldMat;
+	XMStoreFloat4x4(&ShapeData1->boneOffsets[0], XMMatrixIdentity());
+	int numBones = whatever::GetBoneCount();
+	float** boneMats = whatever::GetBoneBindMat();
+	float** keyFrames = whatever::GetBoneAnimationKeyFrames();
+	auto parentInd = whatever::GetParentInds();
+	auto animKeyframes = whatever::GetBoneAnimationKeyFrames();
+	auto animtweens = whatever::GetAnimationKeyframeTweens();
+	Animation* anim1 = new Animation();
+	Skeleton* skele1 = new Skeleton();
+	skele1->Bones.reserve(numBones);
+	auto identity = XMMatrixIdentity();
+	XMVECTOR blah;
+	for(int i= 0; i < numBones; i++)
+	{
+		ShapeData1->boneOffsets[i + 1] = XMFLOAT4X4(boneMats[i][0], boneMats[i][1], boneMats[i][2], boneMats[i][3],
+													boneMats[i][4], boneMats[i][5], boneMats[i][6], boneMats[i][7],
+													boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
+													boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
+		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
+		skele1->Bones.push_back(TransformNode());
+		if(parentInd[i] != -1)
+		{
+			skele1->Bones[i].addParent(&skele1->Bones[parentInd[i]]);
+		}
+		skele1->Bones[i].setLocal(identity);
+		anim1->bones.push_back(Bone());
+		auto keyFrameCount = whatever::GetKeyFrameAmount(i);
+		if(keyFrameCount > 2)
+		{
+			for(int j = 0; j < keyFrameCount; j++)
+			{
+				anim1->bones[i].frames.push_back(Keyframe());
+				anim1->bones[i].frames[j].tweenTime = animtweens[i][j];
+				auto tempMat = XMFLOAT4X4(animKeyframes[i][j * 16 + 0], animKeyframes[i][j * 16 + 1], animKeyframes[i][j * 16 + 2], animKeyframes[i][j * 16 + 3],
+										  animKeyframes[i][j * 16 + 4], animKeyframes[i][j * 16 + 5], animKeyframes[i][j * 16 + 6], animKeyframes[i][j * 16 + 7],
+										  animKeyframes[i][j * 16 + 8], animKeyframes[i][j * 16 + 9], animKeyframes[i][j * 16 + 10], animKeyframes[i][j * 16 + 11],
+										  animKeyframes[i][j * 16 + 12], animKeyframes[i][j * 16 + 13], animKeyframes[i][j * 16 + 14], animKeyframes[i][j * 16 + 15]);
+				XMMatrixDecompose(&blah, &anim1->bones[i].frames[j].rotation, &anim1->bones[i].frames[j].position, XMLoadFloat4x4(&tempMat));
+			}
+		}
+		else if(keyFrameCount == 0)
+		{
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[0].rotation, &anim1->bones[i].frames[0].position, identity);
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[1].rotation, &anim1->bones[i].frames[1].position, identity);
+		}
+		else
+		{
+			//HOW THE HECK DO YOU ONLY HAVE 1 ANIMATION FRAME?!?
+			auto tempMat = XMFLOAT4X4(animKeyframes[i][0],  animKeyframes[i][1],  animKeyframes[i][2],  animKeyframes[i][3],
+									  animKeyframes[i][4],  animKeyframes[i][5],  animKeyframes[i][6],  animKeyframes[i][7],
+									  animKeyframes[i][8],  animKeyframes[i][9],  animKeyframes[i][10], animKeyframes[i][11],
+									  animKeyframes[i][12], animKeyframes[i][13], animKeyframes[i][14], animKeyframes[i][15]);
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[0].rotation, &anim1->bones[i].frames[0].position, XMLoadFloat4x4(&tempMat));
+			anim1->bones[i].frames.push_back(Keyframe());
+			anim1->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim1->bones[i].frames[1].rotation, &anim1->bones[i].frames[1].position, XMLoadFloat4x4(&tempMat));
+		}
+	}
+	Interpolator* interpolator = new Interpolator();
+	interpolator->animation = anim1;
+	ModelShape->ShapeData.push_back(ShapeData1);
+	ModelShape->ShapeData.push_back(interpolator);
+	ModelShape->ShapeData.push_back(skele1);
+	ModelShape->ShapeData.push_back(anim1);
 
-	Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
-	Device->CreateGeometryShader(&BasicGeometryShader, ARRAYSIZE(BasicGeometryShader), NULL, ModelContext->m_geometryShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
+#endif
+
+
+
+	std::vector<uint8_t> VSData2;
+	std::vector<uint8_t> PSData2;
+	std::vector<uint8_t> GSData;
+	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
+	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
+	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
+	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	Device->CreateGeometryShader(&GSData[0], GSData.size(), NULL, ModelContext->m_geometryShader.GetAddressOf());
+	//Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	//Device->CreateGeometryShader(&BasicGeometryShader, ARRAYSIZE(BasicGeometryShader), NULL, ModelContext->m_geometryShader.GetAddressOf());
+	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -910,19 +1026,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
-	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), ModelContext->m_inputLayout.GetAddressOf());
+	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &VSData2[0], VSData2.size(), ModelContext->m_inputLayout.GetAddressOf());
 
 	//Add temp spheres around here I think
+	//VertexPositionUVWNorm* SphereMesh = GenerateObject::CreateD20Verts();
+	//int* SphereInds = GenerateObject::CreateD20Inds();
 
-	//ModelContext->AddChild(ModelShape);
-	//ModelContext->AddChild(planeContext);
-	//ModelContext->AddChild(planeShape);
+	ModelContext->AddChild(ModelShape);
+	ModelContext->AddChild(planeContext);
+	ModelContext->AddChild(planeShape);
 
-	planeContext->AddChild(planeShape);
-	planeContext->AddChild(ModelContext);
-	planeContext->AddChild(ModelShape);
+	//planeContext->AddChild(planeShape);
+	//planeContext->AddChild(ModelContext);
+	//planeContext->AddChild(ModelShape);
 	Set = RenderSet();
-	Set.SetHead(planeContext);
+	Set.SetHead(ModelContext);
 
 	CurrCamera = new Camera;
 	CurrCamera->init(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT);
@@ -945,10 +1063,12 @@ bool DEMO_APP::Run()
 	CurrCamera->update(delta);
 	ModelShape->Update(delta);
 
-	dContext->OMSetRenderTargets(1, &targetView, NULL);
+	dContext->OMSetRenderTargets(1, &targetView, devResources->GetDepthStencilView());
 	dContext->RSSetViewports(1, &viewport);
 	FLOAT color[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	dContext->ClearRenderTargetView(targetView, color);
+	dContext->ClearDepthStencilView(devResources->GetDepthStencilView(), D3D10_CLEAR_DEPTH, 1, 1);
+	dContext->OMSetDepthStencilState(devResources->GetDepthStencilState(), 0);
 
 	Renderer::Render(&Set);
 	swapChain->Present(0, 0);

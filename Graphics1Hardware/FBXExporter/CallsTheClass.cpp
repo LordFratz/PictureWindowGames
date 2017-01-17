@@ -306,7 +306,7 @@ float ** whatever::GetAnimationKeyframeTweens()
 			if (e + 1 == MyExporter.frames[i].size()) {
 				temp[e] = MyExporter.endTime - MyExporter.frames[i][e].timeStamp;
 			}
-			else temp[e] = MyExporter.frames[i][e - 1].timeStamp - MyExporter.frames[i][e].timeStamp;
+			else temp[e] = MyExporter.frames[i][e + 1].timeStamp - MyExporter.frames[i][e].timeStamp;
 		}
 		Tweens[i] = temp;
 	}

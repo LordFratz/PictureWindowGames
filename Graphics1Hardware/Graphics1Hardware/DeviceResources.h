@@ -16,6 +16,7 @@ public:
 	ID3D11RenderTargetView*	GetBackBufferRenderTargetView() const { return m_d3dRenderTargetView.Get(); }
 	ID3D11DepthStencilView*		GetDepthStencilView() const { return m_d3dDepthStencilView.Get(); }
 	D3D11_VIEWPORT				GetScreenViewport() const { return m_screenViewport; }
+	ID3D11DepthStencilState*	GetDepthStencilState() const { return m_d3dDepthStencilState.Get(); }
 	DirectX::XMFLOAT4X4			GetOrientationTransform3D() const { return m_orientationTransform3D; }
 
 	void checkResources();
