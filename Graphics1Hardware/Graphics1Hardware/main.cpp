@@ -1203,6 +1203,8 @@ bool DEMO_APP::ShutDown()
 	delete ModelContext;
 	delete ModelShape;
 	delete ModelMesh;
+	rasterState.Reset();
+	rasterWireState.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
