@@ -56,7 +56,7 @@ struct DirectionalLight
 struct VertexPositionColor
 {
 	XMFLOAT4 pos;
-	XMFLOAT4 color;
+	XMFLOAT3 color;
 };
 
 struct VertexPositionUVWNorm
@@ -161,6 +161,7 @@ static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> InstanceBuff;
 static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterWireState;
 static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterState;
+static XMMATRIX SingleInstanceWorld;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
 //************************************************************
@@ -178,6 +179,9 @@ class DEMO_APP
 	RenderContext* ModelContext = nullptr;
 	RenderShape* ModelShape = nullptr;
 	RenderMesh* ModelMesh = nullptr;
+
+	RenderShape* SphereShapething = nullptr;
+	RenderMesh* SphereMeshthing = nullptr;
 
 	RenderContext* SphereContext = nullptr;
 	RenderShape * SphereShape = nullptr;
@@ -479,7 +483,8 @@ namespace
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
 			bufferData->boneOffsets[i + 1] = data[i];
-			Whatchamacallit.push_back(data[i]);
+			Whatchamacallit.push_back(XMFLOAT4X4());
+			XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getWorld());
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
 		delete[] data;
@@ -497,17 +502,46 @@ namespace
 		auto Node = &(RenderShape&)RNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
 
-		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
-		UINT stride = sizeof(VertexPositionUVWNorm);
-		UINT offset = 0;
-		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		auto VertShader = (Microsoft::WRL::ComPtr<ID3D11VertexShader>*)Node->Mesh.MeshData[0];
+		context->VSSetShader(VertShader->Get(), nullptr, 0);
+		auto PixelShader = (Microsoft::WRL::ComPtr<ID3D11PixelShader>*)Node->Mesh.MeshData[1];
+		context->PSSetShader(PixelShader->Get(), nullptr, 0);
+		auto InputLayout = (Microsoft::WRL::ComPtr<ID3D11InputLayout>*)Node->Mesh.MeshData[2];
+		context->IASetInputLayout(InputLayout->Get());
+
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[3];
+		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
+		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+
+		auto instCount = (int*)Node->Mesh.MeshData[5];
+
+		D3D11_SUBRESOURCE_DATA BufferData = { 0 };
+		BufferData.pSysMem = Whatchamacallit.data();
+		BufferData.SysMemPitch = 0;
+		BufferData.SysMemSlicePitch = 0;
+		CD3D11_BUFFER_DESC constBuffDesc = CD3D11_BUFFER_DESC(sizeof(XMFLOAT4X4) * *instCount, D3D11_BIND_VERTEX_BUFFER);
+		auto Buffer3 = Microsoft::WRL::ComPtr<ID3D11Buffer>();
+		Node->m_deviceResources->GetD3DDevice()->CreateBuffer(&constBuffDesc, &BufferData, Buffer3.GetAddressOf());
+
+		ID3D11Buffer* buffers[2] = { ((Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[4])->Get(), Buffer3.Get() };
+		UINT stride[2] = { sizeof(VertexPositionUVWNorm), sizeof(XMFLOAT4X4) };
+		UINT offset[2] = { 0, 0 };
+		context->IASetVertexBuffers(0, 2, buffers, stride, offset);
+
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-		//Whatchamacallit.data
-		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+		Buffer3.Reset();
+
+
+		context->DrawIndexedInstanced(Node->Mesh.m_indexCount, *instCount, 0, 0, 0);
 	}
 
 	void CleanSphereShape(std::vector<void*> toClean) {
-		//TODO: Clean up data from SphereShape
+		((Microsoft::WRL::ComPtr<ID3D11VertexShader>*)toClean[0])->Reset();
+		((Microsoft::WRL::ComPtr<ID3D11PixelShader>*)toClean[1])->Reset();
+		((Microsoft::WRL::ComPtr<ID3D11InputLayout>*)toClean[2])->Reset();
+		((Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[3])->Reset();
+		((Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[4])->Reset();
+		delete toClean[5];
 	}
 }
 
@@ -591,7 +625,7 @@ namespace GenerateObject
 			Mesh[i].pos.x = Mesh[i].pos.x / length;
 			Mesh[i].pos.y = Mesh[i].pos.y / length;
 			Mesh[i].pos.z = Mesh[i].pos.z / length;
-			XMStoreFloat4(&(Mesh[i].color), XMVectorSet(1.0f, 0.0f, 1.0f, 1.0f));
+			XMStoreFloat3(&(Mesh[i].color), XMVectorSet(1.0f, 0.0f, 1.0f, 1.0f));
 		}
 		return Mesh;
 	}
@@ -827,6 +861,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 1.0f)));
 		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixTranslation(-5.0f, 0.0f, -1.0f)));
 	}
+
+	SingleInstanceWorld = XMLoadFloat4x4(&animInstances.instances[0]);
 
 	D3D11_SUBRESOURCE_DATA BufferData3 = { 0 };
 	BufferData3.pSysMem = &animInstances;
@@ -1125,6 +1161,68 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &VSData2[0], VSData2.size(), ModelContext->m_inputLayout.GetAddressOf());
 
 
+	//SphereMeshthing = new RenderMesh(CleanSphereShape);
+	//SphereShapething = new RenderShape(devResources, *SphereMeshthing, *planeContext, mat, sphere(), SphereShape, NoCleanup);
+	//
+	//std::vector<uint8_t> VSData3;
+	//std::vector<uint8_t> PSData3;
+	//thing = ShaderLoader::LoadShader(VSData3, "InstancedVertexShader.cso");
+	//thing = ShaderLoader::LoadShader(PSData3, "BasicPixelShader.cso");
+	//auto VertShad = new Microsoft::WRL::ComPtr<ID3D11VertexShader>();
+	//auto PixShad = new Microsoft::WRL::ComPtr<ID3D11PixelShader>();
+	//Device->CreateVertexShader(&VSData3[0], VSData3.size(), NULL, VertShad->GetAddressOf());
+	//Device->CreatePixelShader(&PSData3[0], PSData3.size(), NULL, PixShad->GetAddressOf());
+	//static const D3D11_INPUT_ELEMENT_DESC vertexDesc3[] =
+	//{
+	//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	//	{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	//	{ "WORLDMATRIX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	//	{ "WORLDMATRIX", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	//	{ "WORLDMATRIX", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	//	{ "WORLDMATRIX", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+	//};
+	//auto InputLay = new Microsoft::WRL::ComPtr<ID3D11InputLayout>();
+	//HRESULT asdalkdd = Device->CreateInputLayout(vertexDesc3, ARRAYSIZE(vertexDesc3), &VSData3[0], VSData3.size(), InputLay->GetAddressOf());
+	//
+	//SphereMeshthing->MeshData.push_back(VertShad);
+	//SphereMeshthing->MeshData.push_back(PixShad);
+	//SphereMeshthing->MeshData.push_back(InputLay);
+	//
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	//auto Buffer99 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	//Device->CreateBuffer(&constBuffDesc, nullptr, Buffer99->GetAddressOf());
+	//SphereMeshthing->MeshData.push_back(Buffer99);
+	//
+	////Do Vertex Buffer
+	//
+	//VertexPositionColor* SphereVertexBuffer = GenerateObject::CreateD20Verts();
+	//
+	//BufferData = { 0 };
+	//BufferData.pSysMem = SphereVertexBuffer;
+	//BufferData.SysMemPitch = 0;
+	//BufferData.SysMemSlicePitch = 0;
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionColor) * 12, D3D11_BIND_VERTEX_BUFFER);
+	////constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+	//auto Buffer100 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	//Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer100->GetAddressOf());
+	//SphereMeshthing->MeshData.push_back(Buffer100);
+	//
+	//unsigned short* SphereInds = GenerateObject::CreateD20Inds();
+	//SphereMeshthing->m_indexCount = 60;
+	//
+	//BufferData = { 0 };
+	//BufferData.pSysMem = SphereInds;
+	//BufferData.SysMemPitch = 0;
+	//BufferData.SysMemSlicePitch = 0;
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * SphereMeshthing->m_indexCount, D3D11_BIND_INDEX_BUFFER);
+	////constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+	//Device->CreateBuffer(&constBuffDesc, &BufferData, SphereMeshthing->m_indexBuffer.GetAddressOf());
+	//
+	//int* tempBones = new int;
+	//*tempBones = numBones;
+	//SphereMeshthing->MeshData.push_back(tempBones);
+
+
 	D3D11_RASTERIZER_DESC rasterStateDescriptor;
 	ZeroMemory(&rasterStateDescriptor, sizeof(rasterStateDescriptor));
 	rasterStateDescriptor.FillMode = D3D11_FILL_WIREFRAME;
@@ -1134,13 +1232,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateRasterizerState(&rasterStateDescriptor, rasterWireState.GetAddressOf());
 	rasterStateDescriptor.FillMode = D3D11_FILL_SOLID;
 	Device->CreateRasterizerState(&rasterStateDescriptor, rasterState.GetAddressOf());
-	//Add temp spheres around here I think
-	//VertexPositionUVWNorm* SphereMesh = GenerateObject::CreateD20Verts();
-	//int* SphereInds = GenerateObject::CreateD20Inds();
 
 	ModelContext->AddChild(ModelShape);
 	ModelContext->AddChild(planeContext);
 	ModelContext->AddChild(planeShape);
+	//ModelContext->AddChild(SphereShapething);
 
 	//planeContext->AddChild(planeShape);
 	//planeContext->AddChild(ModelContext);
@@ -1204,6 +1300,10 @@ bool DEMO_APP::ShutDown()
 	delete ModelContext;
 	delete ModelShape;
 	delete ModelMesh;
+	delete SphereMeshthing;
+	delete SphereShapething;
+	rasterState.Reset();
+	rasterWireState.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
