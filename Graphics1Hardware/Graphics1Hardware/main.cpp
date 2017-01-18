@@ -183,6 +183,10 @@ class DEMO_APP
 	RenderShape* SphereShapething = nullptr;
 	RenderMesh* SphereMeshthing = nullptr;
 
+	RenderContext* SphereContext = nullptr;
+	RenderShape * SphereShape = nullptr;
+	RenderMesh* SphereMesh = nullptr;
+	
 	RenderSet Set;
 	ID3D11Buffer *VertBuffer;
 	const unsigned int vertCount = 361;
@@ -727,9 +731,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
 	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape, NoCleanup);
 
+	
 
 
-#if true //use this section once the plane has UVs, normals, and a texture loaded
 	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
 	//auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
 	std::vector<uint8_t> VSData;
@@ -747,17 +751,35 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "NORM" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &VSData[0], VSData.size(), planeContext->m_inputLayout.GetAddressOf());
-#else //current plane
-	Device->CreateVertexShader(&BasicVertexShader, ARRAYSIZE(BasicVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
-	Device->CreatePixelShader(&BasicPixelShader, ARRAYSIZE(BasicPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
-	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-	{
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &BasicVertexShader, ARRAYSIZE(BasicVertexShader), planeContext->m_inputLayout.GetAddressOf());
-#endif
+	
 
+
+	//Sphere initializations :: shader initializations/layouts
+
+	//Things known to need change: 
+	//			-needs a custom context/cleanup functions (PlaneContext & PlaneShape) that correctly handle DrawInstanceIndexed()...
+	//          -BasicVertexShader and BasicPixelShader will need to be modified to properly match inputs, as well as code for handling instanced transforms (instancePos X boneOffset X world etc)
+	//          -Vertex Layout will need new elements flagged with D3D11_INPUT_PER_INSTANCE_DATA (per instance transforms ie, the positions from model origin of each bone) 
+	//              -Also make sure to use 1 for the start slot index, as a separate buffer houses per instance data ex. "POSITION", 1, DXGI_FORMAT_....
+	//**************************************************************
+	//SphereContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+	//SphereMesh = new RenderMesh(CleanupPlaneShape);
+	//SphereShape = new RenderShape(devResources, *SphereMesh, *SphereContext, mat, sphere(), PlaneShape, NoCleanup);
+	//
+	//std::vector<uint8_t> VSDataSphere;
+	//std::vector<uint8_t> PSDataSphere;
+	//thing = ShaderLoader::LoadShader(VSDataSphere, "BasicVertexShader.cso");
+	//thing = ShaderLoader::LoadShader(PSDataSphere, "BasicPixelShader.cso");
+	//Device->CreateVertexShader(&VSDataSphere[0], VSDataSphere.size(), NULL, SphereContext->m_vertexShader.GetAddressOf());
+	//Device->CreatePixelShader(&PSDataSphere[0], PSDataSphere.size(), NULL, SphereContext->m_pixelShader.GetAddressOf());
+	//static const D3D11_INPUT_ELEMENT_DESC SphereVertexDesc[] =
+	//{
+	//{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	//{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	//};
+	//Device->CreateInputLayout(SphereVertexDesc, ARRAYSIZE(SphereVertexDesc), &VSDataSphere[0], VSDataSphere.size(), SphereContext->m_inputLayout.GetAddressOf());
+	//*************************************************************
+	//end Sphere initializations and shader initializations/layouts
 
 
 	CD3D11_BUFFER_DESC constBuffDesc(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
@@ -786,6 +808,31 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto Buffer3 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer3->GetAddressOf());
 	planeMesh->MeshData.push_back(Buffer3);
+
+	//Sphere initializations:: VertexBuffer/IndexBuffer
+	// These should be good to go when you are ready
+	// However, another vertex buffer will be needed to store the instance data, which can be updated via subresource management in the custom context/update/cleanup functions
+	//*******************************************************************************
+	//D3D11_SUBRESOURCE_DATA BufferDataSphere = { 0 };
+	//VertexPositionColor* tempSphereVertBuffer = GenerateObject::CreateD20Verts();
+	//BufferDataSphere.pSysMem = tempSphereVertBuffer;
+	//BufferDataSphere.SysMemPitch = 0;
+	//BufferDataSphere.SysMemSlicePitch = 0;
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionColor) * 12, D3D11_BIND_VERTEX_BUFFER);
+	//auto BufferSphere = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	//Device->CreateBuffer(&constBuffDesc, &BufferDataSphere, BufferSphere->GetAddressOf());
+	//SphereMesh->MeshData.push_back(BufferSphere);
+	//
+	//
+	//unsigned short* sphereIndices = GenerateObject::CreateD20Inds();
+	//SphereMesh->m_indexCount = 60;
+	//BufferDataSphere = { 0 };
+	//BufferDataSphere.pSysMem = sphereIndices;
+	//BufferDataSphere.SysMemPitch = 0;
+	//BufferDataSphere.SysMemSlicePitch = 0;
+	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(unsigned short) * 60, D3D11_BIND_INDEX_BUFFER);
+	//Device->CreateBuffer(&constBuffDesc, &BufferDataSphere, SphereMesh->m_indexBuffer.GetAddressOf());
+	//end Sphere initializations :: VertexBuffer/IndexBuffer
 
 	//Light initializations
 	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
@@ -1254,6 +1301,8 @@ bool DEMO_APP::ShutDown()
 	delete ModelMesh;
 	delete SphereMeshthing;
 	delete SphereShapething;
+	rasterState.Reset();
+	rasterWireState.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
