@@ -460,6 +460,8 @@ namespace
 		delete toClean[6];
 	}
 
+	static std::vector<XMFLOAT4X4> Whatchamacallit = std::vector<XMFLOAT4X4>();
+
 	void ProperSkinnedUpdate(RenderShape &Node, float delta)
 	{
 		auto bufferData = (BoxSkinnedConstBuff*)Node.ShapeData[0];
@@ -473,6 +475,7 @@ namespace
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
 			bufferData->boneOffsets[i + 1] = data[i];
+			Whatchamacallit.push_back(data[i]);
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
 		delete[] data;
@@ -484,6 +487,23 @@ namespace
 		delete toClean[1];
 		delete toClean[2];
 		delete toClean[3];
+	}
+
+	void SphereShape(RenderNode& RNode) {
+		auto Node = &(RenderShape&)RNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		UINT stride = sizeof(VertexPositionUVWNorm);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+		//Whatchamacallit.data
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+	}
+
+	void CleanSphereShape(std::vector<void*> toClean) {
+		//TODO: Clean up data from SphereShape
 	}
 }
 
@@ -855,7 +875,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.Indices = XMINT4(BoneIndices[i][0] + 1, BoneIndices[i][1] + 1, BoneIndices[i][2] + 1, BoneIndices[i][3] + 1);
 		SkinnedVertexBuffer[i] = Temp;
 	}
-
+	//TODO: Read down from here, follow step by step instatiation of ModelMesh and ModelShape to set up SphereMesh and SphereShape
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
@@ -1091,6 +1111,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 bool DEMO_APP::Run()
 {
+	Whatchamacallit.clear();
 	auto swapChain = devResources->GetSwapChain();
 	auto dContext = devResources->GetD3DDeviceContext();
 	auto targetView = devResources->GetBackBufferRenderTargetView();

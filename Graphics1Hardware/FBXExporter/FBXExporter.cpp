@@ -53,6 +53,8 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 		ProcessSkeleton(RootNode);
 		ExportFBX(RootNode);
 		if (!NotLoadingMeshData) {
+			GetSocketIndecies();
+			RemoveSockets();
 			SetVertToBoneInds();
 			SetWeightToBoneInds();
 		}
@@ -65,12 +67,18 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 FbxAMatrix FBXExporter::FBXExport::ConvertToDirectX(FbxAMatrix mat)
 {
 	//change matrixes in to be DirectX compatible (might be wrong who knows)
-	FbxVector4 translation = mat.GetT();
-	FbxVector4 rotation = mat.GetR();
-	translation.Set(translation.mData[0], translation.mData[1], -translation.mData[2]);
-	rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
-	mat.SetT(translation);
-	mat.SetR(rotation);
+	//FbxVector4 translation = mat.GetT();
+	//FbxVector4 rotation = mat.GetR();
+	//translation.Set(translation.mData[0], translation.mData[1], -translation.mData[2]);
+	//rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
+	//mat.SetT(translation);
+	//mat.SetR(rotation);
+	mat.mData[1].mData[3] = -mat.mData[1].mData[3];
+	mat.mData[2].mData[3] = -mat.mData[2].mData[3];
+	mat.mData[3].mData[1] = -mat.mData[3].mData[1];
+	mat.mData[3].mData[2] = -mat.mData[3].mData[2];
+	mat.mData[3].mData[4] = -mat.mData[3].mData[4];
+	mat.mData[4].mData[3] = -mat.mData[4].mData[3];
 	return mat;
 }
 
@@ -159,6 +167,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 				FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
 				endTime = (float)end.GetSecondDouble();
 				AnimLength = (unsigned int)(end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24));
+				std::vector<KeyFrame> tempFrames;
 				for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); i++) {
 					FbxTime currTime;
 					currTime.SetFrame(i, FbxTime::eFrames24);
@@ -168,8 +177,9 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
 					currAnim.GlobalTransform = ConvertToDirectX(currentTransformOffset.Inverse() * cl->GetLink()->EvaluateGlobalTransform(currTime));
-					frames[ind].push_back(currAnim);
+					tempFrames.push_back(currAnim);
 				}
+				frames[ind] = tempFrames;
 			}
 		}
 	}
@@ -199,6 +209,7 @@ void FBXExporter::FBXExport::ClearInfo()
 	frames.clear();
 	BoneVertInds.clear();
 	BoneWeights.clear();
+	SocketInds.clear();
 	if (!NotLoadingMeshData) {
 		BoneVerts.clear();
 		WeightVerts.clear();
@@ -238,6 +249,52 @@ void FBXExporter::FBXExport::ProcessSkeletonRecur(FbxNode * inNode, int inDepth,
 	{
 		ProcessSkeletonRecur(inNode->GetChild(i), inDepth + 1, (int)Skeleton.size(), myIndex);
 	}
+}
+
+void FBXExporter::FBXExport::GetSocketIndecies()
+{
+	for (int i = 0; i < frames.size(); i++) {
+		if (frames[i].size() <= 0) {
+			SocketInds.push_back(i);
+		}
+	}
+}
+
+void FBXExporter::FBXExport::RemoveSockets()
+{
+	std::vector<std::vector<KeyFrame>> RS;
+	std::vector<std::vector<int>> VS;
+	std::vector<std::vector<float>> WS;
+	std::vector<Bone> SS;
+	std::vector<std::string> BS;
+	int adj = 0;
+	bool bad = false;
+	for (int i = 0; i < Skeleton.size(); i++) {
+		for (int e = 0; e < SocketInds.size(); e++) {
+			if (i == SocketInds[e]) {
+				bad = true;
+			}
+			if (Skeleton[i].parentIndex > SocketInds[e]) {
+				adj++;
+			}
+		}
+		if (!bad) {
+			Bone tempBone = Skeleton[i];
+			tempBone.parentIndex -= adj;
+			SS.push_back(tempBone);
+			BS.push_back(boneNames[i]);
+			RS.push_back(frames[i]);
+			VS.push_back(BoneVertInds[i]);
+			WS.push_back(BoneWeights[i]);
+		}
+		bad = false;
+		adj = 0;
+	}
+	boneNames = BS;
+	Skeleton = SS;
+	frames = RS;
+	BoneVertInds = VS;
+	BoneWeights = WS;
 }
 
 void FBXExporter::FBXExport::SetVertToBoneInds()
