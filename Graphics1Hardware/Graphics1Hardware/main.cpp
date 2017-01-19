@@ -184,7 +184,7 @@ class DEMO_APP
 	RenderMesh* SphereMeshthing = nullptr;
 
 	RenderContext* SphereContext = nullptr;
-	RenderShape * SphereShapeOld = nullptr;
+	//RenderShape * SphereShapeOld = nullptr;
 	RenderMesh* SphereMesh = nullptr;
 	
 	RenderSet Set;
@@ -483,8 +483,10 @@ namespace
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
 			bufferData->boneOffsets[i + 1] = data[i];
+			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
 			Whatchamacallit.push_back(XMFLOAT4X4());
 			XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getWorld());
+			Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
 		delete[] data;
@@ -522,7 +524,7 @@ namespace
 		ID3D11Buffer* buffers[2] = { ((Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[3])->Get(), Buffer3.Get() };
 		UINT stride[2] = { sizeof(VertexPositionUVWNorm), sizeof(XMFLOAT4X4) };
 		UINT offset[2] = { 0, 0 };
-		context->IASetVertexBuffers(0, 2, buffers, stride, offset);
+		context->IASetVertexBuffers(0, 2, buffers, stride, offset); //breaking here
 
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 		Buffer3.Reset();
@@ -1182,11 +1184,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	SphereMeshthing->MeshData.push_back(PixShad);
 	SphereMeshthing->MeshData.push_back(InputLay);
 	
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
-	auto Buffer99 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer99->GetAddressOf());
-	SphereMeshthing->MeshData.push_back(Buffer99);
-	
 	//Do Vertex Buffer
 	
 	VertexPositionColor* SphereVertexBuffer = GenerateObject::CreateD20Verts();
@@ -1230,7 +1227,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext->AddChild(ModelShape);
 	ModelContext->AddChild(planeContext);
 	ModelContext->AddChild(planeShape);
-	//ModelContext->AddChild(SphereShapething);
+	ModelContext->AddChild(SphereShapething);
 
 	//planeContext->AddChild(planeShape);
 	//planeContext->AddChild(ModelContext);
@@ -1298,6 +1295,7 @@ bool DEMO_APP::ShutDown()
 	delete SphereShapething;
 	rasterState.Reset();
 	rasterWireState.Reset();
+	InstanceBuff.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;
