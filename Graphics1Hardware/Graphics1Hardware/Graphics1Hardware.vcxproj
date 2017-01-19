@@ -32,7 +32,7 @@
     <ClInclude Include="XTime.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\..\..\..\..\Thingsn%27Stuff\notes\PP5\PictureWindowGames\Graphics1Hardware\Graphics1Hardware\InstancedVertexShader.hlsl">
+    <FxCompile Include="InstancedVertexShader.hlsl">
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).cso</ObjectFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>

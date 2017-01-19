@@ -186,7 +186,7 @@ class DEMO_APP
 	RenderContext* SphereContext = nullptr;
 	RenderShape * SphereShape = nullptr;
 	RenderMesh* SphereMesh = nullptr;
-	
+
 	RenderSet Set;
 	ID3D11Buffer *VertBuffer;
 	const unsigned int vertCount = 361;
@@ -731,7 +731,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
 	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape, NoCleanup);
 
-	
+
 
 
 	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
@@ -751,15 +751,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "NORM" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &VSData[0], VSData.size(), planeContext->m_inputLayout.GetAddressOf());
-	
+
 
 
 	//Sphere initializations :: shader initializations/layouts
 
-	//Things known to need change: 
+	//Things known to need change:
 	//			-needs a custom context/cleanup functions (PlaneContext & PlaneShape) that correctly handle DrawInstanceIndexed()...
 	//          -BasicVertexShader and BasicPixelShader will need to be modified to properly match inputs, as well as code for handling instanced transforms (instancePos X boneOffset X world etc)
-	//          -Vertex Layout will need new elements flagged with D3D11_INPUT_PER_INSTANCE_DATA (per instance transforms ie, the positions from model origin of each bone) 
+	//          -Vertex Layout will need new elements flagged with D3D11_INPUT_PER_INSTANCE_DATA (per instance transforms ie, the positions from model origin of each bone)
 	//              -Also make sure to use 1 for the start slot index, as a separate buffer houses per instance data ex. "POSITION", 1, DXGI_FORMAT_....
 	//**************************************************************
 	//SphereContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
