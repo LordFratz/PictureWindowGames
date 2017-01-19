@@ -1,4 +1,4 @@
-cbuffer ViewProjectionBuffer : register(b0)
+cbuffer ViewProjectionBuffer : register(b1)
 {
 	matrix view;
 	matrix projection; //Look into cameraData in main (may need to update subresource or whatever)
@@ -8,7 +8,7 @@ cbuffer ViewProjectionBuffer : register(b0)
 struct VertexShaderInput
 {
 	float4 pos : POSITION;
-	float3 color : COLOR;
+	float4 color : COLOR;
 	//Per-instance data
 	matrix Matrix : WORLDMATRIX;
 };
@@ -16,7 +16,7 @@ struct VertexShaderInput
 struct PixelShaderInput
 {
 	float4 pos : SV_POSITION;
-	float3 color : COLOR0;
+	float4 color : COLOR0;
 };
 
 PixelShaderInput main(VertexShaderInput input)
