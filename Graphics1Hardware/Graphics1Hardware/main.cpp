@@ -1178,20 +1178,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 	auto InputLay = new Microsoft::WRL::ComPtr<ID3D11InputLayout>();
 	HRESULT asdalkdd = Device->CreateInputLayout(vertexDesc3, ARRAYSIZE(vertexDesc3), &VSData3[0], VSData3.size(), InputLay->GetAddressOf());
-	
+
 	SphereMeshthing->MeshData.push_back(VertShad);
 	SphereMeshthing->MeshData.push_back(PixShad);
 	SphereMeshthing->MeshData.push_back(InputLay);
-	
+
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
 	auto Buffer99 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer99->GetAddressOf());
 	SphereMeshthing->MeshData.push_back(Buffer99);
-	
+
 	//Do Vertex Buffer
-	
+
 	VertexPositionColor* SphereVertexBuffer = GenerateObject::CreateD20Verts();
-	
+
 	BufferData = { 0 };
 	BufferData.pSysMem = SphereVertexBuffer;
 	BufferData.SysMemPitch = 0;
@@ -1201,10 +1201,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto Buffer100 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer100->GetAddressOf());
 	SphereMeshthing->MeshData.push_back(Buffer100);
-	
+
 	unsigned short* SphereInds = GenerateObject::CreateD20Inds();
 	SphereMeshthing->m_indexCount = 60;
-	
+
 	BufferData = { 0 };
 	BufferData.pSysMem = SphereInds;
 	BufferData.SysMemPitch = 0;
@@ -1212,7 +1212,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * SphereMeshthing->m_indexCount, D3D11_BIND_INDEX_BUFFER);
 	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, SphereMeshthing->m_indexBuffer.GetAddressOf());
-	
+
 	int* tempBones = new int;
 	*tempBones = numBones;
 	SphereMeshthing->MeshData.push_back(tempBones);
@@ -1287,6 +1287,9 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
+	rasterState.Reset();
+	rasterWireState.Reset();
+	InstanceBuff.Reset();
 	LightBuff.Reset();
 	devResources->checkResources();
 	delete planeContext;
@@ -1297,8 +1300,6 @@ bool DEMO_APP::ShutDown()
 	delete ModelMesh;
 	delete SphereMeshthing;
 	delete SphereShapething;
-	rasterState.Reset();
-	rasterWireState.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;

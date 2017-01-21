@@ -200,6 +200,87 @@ public:
 	}
 };
 
+struct BlenderDataStorage
+{
+	Interpolator From;
+	Interpolator To;
+	std::vector<Animation> Animations;
+	float TranstionTimer;
+	bool IsBlending;
+	int FromAnimNum = 0, ToAnimNum = -1;
+
+	currFrame Update(float delta)
+	{
+		From.Update(delta);
+		auto rv = From.CurrFrame;
+
+		//Do Input Logic
+		int numAnims = Animations.size();
+		if(GetAsyncKeyState(0x30) && numAnims > 0 && FromAnimNum != 0 && ToAnimNum != 0) //1
+		{
+			ToAnimNum = 0;
+			IsBlending = true;
+			To.animation = &Animations[0];
+		}
+		else if(GetAsyncKeyState(0x31) && numAnims > 1 && FromAnimNum != 1 && ToAnimNum != 1) //2
+		{
+			ToAnimNum = 1;
+			IsBlending = true;
+			To.animation = &Animations[1];
+		}
+		else if(GetAsyncKeyState(0x32) && numAnims > 2 && FromAnimNum != 2 && ToAnimNum != 2) //3
+		{
+			ToAnimNum = 2;
+			IsBlending = true;
+			To.animation = &Animations[2];
+		}
+		else if(GetAsyncKeyState(0x33) && numAnims > 3 && FromAnimNum != 3 && ToAnimNum != 3) //4
+		{
+			ToAnimNum = 3;
+			IsBlending = true;
+			To.animation = &Animations[3];
+		}
+		else if (GetAsyncKeyState(0x34) && numAnims > 4 && FromAnimNum != 4 && ToAnimNum != 4) //5
+		{
+			ToAnimNum = 4;
+			IsBlending = true;
+			To.animation = &Animations[5];
+		}
+
+		if(IsBlending)
+		{
+			TranstionTimer += delta;
+			To.Update(delta);
+			float ratio = TranstionTimer / 5.0f;
+			rv = Blend(From.CurrFrame, To.CurrFrame, ratio);
+			if(TranstionTimer >= 5.0f)
+			{
+				TranstionTimer = 0.0f;
+				IsBlending = false;
+				From = To;
+				To = Interpolator();
+				FromAnimNum = ToAnimNum;
+				ToAnimNum = -1;
+			}
+		}
+
+		return rv;
+	}
+
+	static currFrame Blend(currFrame From, currFrame To, float ratio)
+	{
+		currFrame rv = currFrame();
+		for (int i = 0; i < From.thisFrame.size(); i++)
+		{
+			Keyframe temp = Keyframe();
+			temp.rotation = XMQuaternionSlerp(From.thisFrame[i].rotation, To.thisFrame[i].rotation, ratio);
+			temp.position = XMVectorLerp(From.thisFrame[i].position, From.thisFrame[i].position, ratio);
+			rv.thisFrame.push_back(temp);
+		}
+		return rv;
+	}
+};
+
 class TransformNode
 {
 	std::vector<TransformNode*> children = std::vector<TransformNode*>();
