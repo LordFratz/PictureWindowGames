@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 1
 
 struct ViewProj
 {
@@ -1230,12 +1230,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	SphereMeshthing->MeshData.push_back(VertShad);
 	SphereMeshthing->MeshData.push_back(PixShad);
 	SphereMeshthing->MeshData.push_back(InputLay);
-
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
-	auto Buffer99 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
-	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer99->GetAddressOf());
-	SphereMeshthing->MeshData.push_back(Buffer99);
-	//Do Vertex Buffer
 
 	VertexPositionColor* SphereVertexBuffer = GenerateObject::CreateD20Verts();
 
