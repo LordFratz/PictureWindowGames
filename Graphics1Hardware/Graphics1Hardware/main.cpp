@@ -31,7 +31,7 @@ using namespace DirectX;
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
 
-//define 1 for bear, 0 for box
+//define 1 for bear, 0 for box, 2 for Mage
 #define LOADED_BEAR 0
 
 struct ViewProj
@@ -184,7 +184,7 @@ class DEMO_APP
 	RenderMesh* SphereMeshthing = nullptr;
 
 	RenderContext* SphereContext = nullptr;
-	RenderShape * SphereShapeOld = nullptr;
+	//RenderShape * SphereShapeOld = nullptr;
 	RenderMesh* SphereMesh = nullptr;
 
 	RenderSet Set;
@@ -483,8 +483,10 @@ namespace
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
 			bufferData->boneOffsets[i + 1] = data[i];
+			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
 			Whatchamacallit.push_back(XMFLOAT4X4());
 			XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getWorld());
+			Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
 		delete[] data;
@@ -522,7 +524,7 @@ namespace
 		ID3D11Buffer* buffers[2] = { ((Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[3])->Get(), Buffer3.Get() };
 		UINT stride[2] = { sizeof(VertexPositionUVWNorm), sizeof(XMFLOAT4X4) };
 		UINT offset[2] = { 0, 0 };
-		context->IASetVertexBuffers(0, 2, buffers, stride, offset);
+		context->IASetVertexBuffers(0, 2, buffers, stride, offset); //breaking here
 
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 		Buffer3.Reset();
@@ -912,17 +914,22 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	if (LOADED_BEAR)
+	if (LOADED_BEAR == 1)
 	{
 		whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
 		whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
 		whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 	}
-	else
+	else if(LOADED_BEAR == 0)
 	{
 		whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
 		whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
 		whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	}
+	else if (LOADED_BEAR == 2) {
+		whatever::loadFile("../Resources/Mage_Mesh.pwm", "../Resources/BattleMageWhat.fbx");
+		whatever::loadFile("../Resources/Mage_Skeleton.pws", "../Resources/BattleMageWhat.fbx");
+		whatever::loadFile("../Resources/Mage_DeathAnim.pwa", "../Resources/BattleMageWhat.fbx");
 	}
 
 
@@ -998,23 +1005,59 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
 
 	//Change when bear texture gets added
-	if (LOADED_BEAR)
+	if (LOADED_BEAR == 1)
 	{
 		const size_t size1 = strlen("../Resources/Teddy_D.dds") + 1;
 		wText = new wchar_t[size1];
 		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/Teddy_D.dds", size_t(size1));
 	}
-	else
+	else if(LOADED_BEAR == 0)
 	{
 		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
 		wText = new wchar_t[size1];
 		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	}
+	else if (LOADED_BEAR == 2) {
+		const size_t size1 = strlen("../Resources/MageTexture.dds") + 1;
+		wText = new wchar_t[size1];
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/MageTexture.dds", size_t(size1));
 	}
 
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
 	wText = NULL;
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
+
+#if LOADED_BEAR == 2
+
+	//Loads Normal / Emissive / Specular Texture maps when the mage is being loaded in for the mage
+
+	auto SRV2 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	auto SRV3 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	auto SRV4 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+
+	const size_t size1 = strlen("../Resources/MageNormal.dds") + 1;
+	wText = new wchar_t[size1];
+	mbstowcs_s(&empty, wText, size_t(size1), "../Resources/MageNormal.dds", size_t(size1));
+
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV2->GetAddressOf(), 0);
+
+	const size_t size2 = strlen("../Resources/MageEmissive.dds") + 1;
+	wText = new wchar_t[size2];
+	mbstowcs_s(&empty, wText, size_t(size2), "../Resources/MageEmissive.dds", size_t(size2));
+
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV3->GetAddressOf(), 0);
+
+	const size_t size3 = strlen("../Resources/MageSpecular.dds") + 1;
+	wText = new wchar_t[size3];
+	mbstowcs_s(&empty, wText, size_t(size3), "../Resources/MageSpecular.dds", size_t(size3));
+
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV4->GetAddressOf(), 0);
+
+	wText = NULL;
+	delete wText;
+#endif
+
 #if 0
 	auto ShapeData1 = new BoxSkinnedConstBuff;
 	ShapeData1->worldMatrix = ModelShape->WorldMat;
@@ -1187,7 +1230,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto Buffer99 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer99->GetAddressOf());
 	SphereMeshthing->MeshData.push_back(Buffer99);
-
 	//Do Vertex Buffer
 
 	VertexPositionColor* SphereVertexBuffer = GenerateObject::CreateD20Verts();
@@ -1231,7 +1273,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelContext->AddChild(ModelShape);
 	ModelContext->AddChild(planeContext);
 	ModelContext->AddChild(planeShape);
-	//ModelContext->AddChild(SphereShapething);
+	ModelContext->AddChild(SphereShapething);
 
 	//planeContext->AddChild(planeShape);
 	//planeContext->AddChild(ModelContext);
@@ -1300,6 +1342,9 @@ bool DEMO_APP::ShutDown()
 	delete ModelMesh;
 	delete SphereMeshthing;
 	delete SphereShapething;
+	rasterState.Reset();
+	rasterWireState.Reset();
+	InstanceBuff.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;

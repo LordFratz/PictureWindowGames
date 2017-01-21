@@ -215,7 +215,7 @@ struct BlenderDataStorage
 		auto rv = From.CurrFrame;
 
 		//Do Input Logic
-		int numAnims = Animations.size();
+		int numAnims = (int)Animations.size();
 		if(GetAsyncKeyState(0x30) && numAnims > 0 && FromAnimNum != 0 && ToAnimNum != 0) //1
 		{
 			ToAnimNum = 0;
