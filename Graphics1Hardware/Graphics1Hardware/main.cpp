@@ -31,7 +31,7 @@ using namespace DirectX;
 #define BACKBUFFER_WIDTH	800
 #define BACKBUFFER_HEIGHT	600
 
-//define 1 for bear, 0 for box
+//define 1 for bear, 0 for box, 2 for Mage
 #define LOADED_BEAR 0
 
 struct ViewProj
@@ -914,17 +914,22 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//End Plane Init
 #endif
 
-	if (LOADED_BEAR)
+	if (LOADED_BEAR == 1)
 	{
 		whatever::loadFile("../Resources/Teddy_Mesh.pwm", "../Resources/Teddy_Run.fbx");
 		whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
 		whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 	}
-	else
+	else if(LOADED_BEAR == 0)
 	{
 		whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
 		whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
 		whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+	}
+	else if (LOADED_BEAR == 2) {
+		whatever::loadFile("../Resources/Mage_Mesh.pwm", "../Resources/BattleMageWhat.fbx");
+		whatever::loadFile("../Resources/Mage_Skeleton.pws", "../Resources/BattleMageWhat.fbx");
+		whatever::loadFile("../Resources/Mage_DeathAnim.pwa", "../Resources/BattleMageWhat.fbx");
 	}
 
 
@@ -1000,23 +1005,59 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto SRV1 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
 
 	//Change when bear texture gets added
-	if (LOADED_BEAR)
+	if (LOADED_BEAR == 1)
 	{
 		const size_t size1 = strlen("../Resources/Teddy_D.dds") + 1;
 		wText = new wchar_t[size1];
 		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/Teddy_D.dds", size_t(size1));
 	}
-	else
+	else if(LOADED_BEAR == 0)
 	{
 		const size_t size1 = strlen("../Resources/TestCube.dds") + 1;
 		wText = new wchar_t[size1];
 		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/TestCube.dds", size_t(size1));
+	}
+	else if (LOADED_BEAR == 2) {
+		const size_t size1 = strlen("../Resources/MageTexture.dds") + 1;
+		wText = new wchar_t[size1];
+		mbstowcs_s(&empty, wText, size_t(size1), "../Resources/MageTexture.dds", size_t(size1));
 	}
 
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV1->GetAddressOf(), 0);
 	wText = NULL;
 	delete wText;
 	ModelMesh->MeshData.push_back(SRV1);
+
+#if LOADED_BEAR == 2
+
+	//Loads Normal / Emissive / Specular Texture maps when the mage is being loaded in for the mage
+
+	auto SRV2 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	auto SRV3 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+	auto SRV4 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
+
+	const size_t size1 = strlen("../Resources/MageNormal.dds") + 1;
+	wText = new wchar_t[size1];
+	mbstowcs_s(&empty, wText, size_t(size1), "../Resources/MageNormal.dds", size_t(size1));
+
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV2->GetAddressOf(), 0);
+
+	const size_t size2 = strlen("../Resources/MageEmissive.dds") + 1;
+	wText = new wchar_t[size2];
+	mbstowcs_s(&empty, wText, size_t(size2), "../Resources/MageEmissive.dds", size_t(size2));
+
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV3->GetAddressOf(), 0);
+
+	const size_t size3 = strlen("../Resources/MageSpecular.dds") + 1;
+	wText = new wchar_t[size3];
+	mbstowcs_s(&empty, wText, size_t(size3), "../Resources/MageSpecular.dds", size_t(size3));
+
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV4->GetAddressOf(), 0);
+
+	wText = NULL;
+	delete wText;
+#endif
+
 #if 0
 	auto ShapeData1 = new BoxSkinnedConstBuff;
 	ShapeData1->worldMatrix = ModelShape->WorldMat;
