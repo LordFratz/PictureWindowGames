@@ -120,7 +120,7 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 					newNormal.pos[2] = -(float)tempNorms[e * 3 + j].mData[2];
 					newNormal.pos[3] = (float)tempNorms[e * 3 + j].mData[3];
 
-					newUV.pos[0] = 1.0f - (float)crud.mData[0] - 0.5f;
+					newUV.pos[0] = (float)crud.mData[0];
 					newUV.pos[1] = 1.0f - (float)crud.mData[1];
 
 					Normals.push_back(newNormal);

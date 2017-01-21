@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 1
 
 struct ViewProj
 {
@@ -846,17 +846,22 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end light initializations
 
 	//instance initializations
-	if (LOADED_BEAR)
+	if (LOADED_BEAR == 1)
 	{
 		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(0.0f, 0.0f, 0.0f))));
 		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(5.0f, 0.0f, 1.0f))));
 		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(-5.0f, 0.0f, -1.0f))));
 	}
-	else
+	else if(LOADED_BEAR == 0)
 	{
 		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f)));
 		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 1.0f)));
 		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixTranslation(-5.0f, 0.0f, -1.0f)));
+	}
+	else if (LOADED_BEAR == 2) {
+		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.7f, 0.7f, 0.7f), XMMatrixTranslation(0.0f, 0.0f, 0.0f))));
+		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.7f, 0.7f, 0.7f), XMMatrixTranslation(5.0f, 0.0f, 1.0f))));
+		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.7f, 0.7f, 0.7f), XMMatrixTranslation(-5.0f, 0.0f, -1.0f))));
 	}
 
 	SingleInstanceWorld = XMLoadFloat4x4(&animInstances.instances[0]);
