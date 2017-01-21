@@ -186,7 +186,7 @@ class DEMO_APP
 	RenderContext* SphereContext = nullptr;
 	//RenderShape * SphereShapeOld = nullptr;
 	RenderMesh* SphereMesh = nullptr;
-	
+
 	RenderSet Set;
 	ID3D11Buffer *VertBuffer;
 	const unsigned int vertCount = 361;
@@ -728,7 +728,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&mat, XMMatrixIdentity());
 	planeShape = new RenderShape(devResources, *planeMesh, *planeContext, mat, sphere(), TexturedShape, NoCleanup);
 
-	
+
 
 
 	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
@@ -748,15 +748,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ "NORM" , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	Device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &VSData[0], VSData.size(), planeContext->m_inputLayout.GetAddressOf());
-	
+
 
 
 	//Sphere initializations :: shader initializations/layouts
 
-	//Things known to need change: 
+	//Things known to need change:
 	//			-needs a custom context/cleanup functions (PlaneContext & PlaneShape) that correctly handle DrawInstanceIndexed()...
 	//          -BasicVertexShader and BasicPixelShader will need to be modified to properly match inputs, as well as code for handling instanced transforms (instancePos X boneOffset X world etc)
-	//          -Vertex Layout will need new elements flagged with D3D11_INPUT_PER_INSTANCE_DATA (per instance transforms ie, the positions from model origin of each bone) 
+	//          -Vertex Layout will need new elements flagged with D3D11_INPUT_PER_INSTANCE_DATA (per instance transforms ie, the positions from model origin of each bone)
 	//              -Also make sure to use 1 for the start slot index, as a separate buffer houses per instance data ex. "POSITION", 1, DXGI_FORMAT_....
 	//**************************************************************
 	//SphereContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
@@ -1121,6 +1121,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 								   boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
 
 		XMStoreFloat4x4(&ShapeData1->boneOffsets[i + 1], XMMatrixInverse(nullptr, XMLoadFloat4x4(&currBind)));
+		//ShapeData1->boneOffsets[i + 1] = currBind;
 
 		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
 		skele1->Bones.push_back(TransformNode());
@@ -1225,15 +1226,19 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 	auto InputLay = new Microsoft::WRL::ComPtr<ID3D11InputLayout>();
 	HRESULT asdalkdd = Device->CreateInputLayout(vertexDesc3, ARRAYSIZE(vertexDesc3), &VSData3[0], VSData3.size(), InputLay->GetAddressOf());
-	
+
 	SphereMeshthing->MeshData.push_back(VertShad);
 	SphereMeshthing->MeshData.push_back(PixShad);
 	SphereMeshthing->MeshData.push_back(InputLay);
-	
+
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	auto Buffer99 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
+	Device->CreateBuffer(&constBuffDesc, nullptr, Buffer99->GetAddressOf());
+	SphereMeshthing->MeshData.push_back(Buffer99);
 	//Do Vertex Buffer
-	
+
 	VertexPositionColor* SphereVertexBuffer = GenerateObject::CreateD20Verts();
-	
+
 	BufferData = { 0 };
 	BufferData.pSysMem = SphereVertexBuffer;
 	BufferData.SysMemPitch = 0;
@@ -1243,10 +1248,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto Buffer100 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer100->GetAddressOf());
 	SphereMeshthing->MeshData.push_back(Buffer100);
-	
+
 	unsigned short* SphereInds = GenerateObject::CreateD20Inds();
 	SphereMeshthing->m_indexCount = 60;
-	
+
 	BufferData = { 0 };
 	BufferData.pSysMem = SphereInds;
 	BufferData.SysMemPitch = 0;
@@ -1254,7 +1259,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * SphereMeshthing->m_indexCount, D3D11_BIND_INDEX_BUFFER);
 	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, SphereMeshthing->m_indexBuffer.GetAddressOf());
-	
+
 	int* tempBones = new int;
 	*tempBones = numBones;
 	SphereMeshthing->MeshData.push_back(tempBones);
@@ -1329,6 +1334,9 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
+	rasterState.Reset();
+	rasterWireState.Reset();
+	InstanceBuff.Reset();
 	LightBuff.Reset();
 	devResources->checkResources();
 	delete planeContext;
