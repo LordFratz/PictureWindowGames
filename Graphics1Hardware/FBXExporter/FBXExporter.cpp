@@ -52,9 +52,9 @@ void FBXExporter::FBXExport::FBXConvert(const char* filename, const char* Fbxfil
 		FbxNode* RootNode = Scene->GetRootNode();
 		ProcessSkeleton(RootNode);
 		ExportFBX(RootNode);
+		GetSocketIndecies();
+		RemoveSockets();
 		if (!NotLoadingMeshData) {
-			GetSocketIndecies();
-			RemoveSockets();
 			SetVertToBoneInds();
 			SetWeightToBoneInds();
 		}
