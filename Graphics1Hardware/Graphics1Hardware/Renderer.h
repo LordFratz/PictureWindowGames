@@ -302,6 +302,8 @@ public:
 			if (parent != nullptr)
 			{
 				world = XMMatrixInverse(nullptr, parent->getWorld()) * local;
+				//world = local * parent->getWorld();
+				//world = parent->getWorld() * local;
 			}
 			else
 			{
@@ -346,12 +348,12 @@ struct Skeleton
 		XMStoreFloat4x4(&offsets[0], XMMatrixIdentity());
 		for(int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			auto val = frame.thisFrame[i].getMat();
+			XMMATRIX val = frame.thisFrame[i].getMat();
 			Bones[i].setLocal(val);
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getWorld());
+			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getLocal());
 		}
 		return offsets;
 	}
