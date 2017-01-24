@@ -1195,7 +1195,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	std::vector<uint8_t> GSData;
 	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
 #if LOADED_BEAR == 2
-	thing = ShaderLoader::LoadShader(PSData2, "BasicLightNormSpecPixelShader.cso");
+	thing = ShaderLoader::LoadShader(PSData2, "MultiTexturedLitPixelShader.cso");
 #else
 	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
 #endif
