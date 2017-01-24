@@ -489,12 +489,12 @@ namespace
 			Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixMultiply(XMMatrixScaling(200.3f, 200.3f, 200.3f), SingleInstanceWorld) * skeleton->Bones[i].getLocal());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
 				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixMultiply(XMMatrixScaling(0.3f, 0.3f, 0.3f), SingleInstanceWorld) * skeleton->Bones[i].getLocal());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
 				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
