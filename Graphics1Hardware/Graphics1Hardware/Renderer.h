@@ -24,10 +24,9 @@ struct sphere
 struct Keyframe
 {
 public:
-	float tweenTime;
 	XMVECTOR rotation;
 	XMVECTOR position;
-
+	float tweenTime;
 	XMMATRIX getMat()
 	{
 		const XMFLOAT3 one = XMFLOAT3(1, 1, 1);
@@ -191,7 +190,7 @@ public:
 		}
 	}
 
-	Keyframe Interpolate(Keyframe currFrame, Keyframe nextFrame, float ratio)
+	 Keyframe __fastcall Interpolate(Keyframe currFrame, Keyframe nextFrame, float ratio)
 	{
 		Keyframe rv = Keyframe();
 		rv.rotation = XMQuaternionSlerp(currFrame.rotation, nextFrame.rotation, ratio);

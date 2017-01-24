@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 2
+#define LOADED_BEAR 0
 
 struct ViewProj
 {
@@ -274,6 +274,19 @@ namespace
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 	}
 
+	void CleanupTexturedNormSpecShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->Reset();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->Reset();
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)toClean[2];
+		Sampler->Reset();
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
+		Texture->Reset();
+		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
+		Texture->Reset();
+	}
 
 	/// <summary>
 	/// Generic TEXTURELESS RenderContext Function
@@ -374,10 +387,6 @@ namespace
 		Sampler->Reset();
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
 		Texture->Reset();
-#if LOADED_BEAR == 2
-		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
-		Texture->Reset();
-#endif
 	}
 
 	void NoCleanup(std::vector<void*> toClean){}
@@ -490,17 +499,17 @@ namespace
 		bufferData->worldMatrix = Node.WorldMat;
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
-			bufferData->boneOffsets[i + 1] = data[i];
+			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixMultiply(XMMatrixScaling(200.3f, 200.3f, 200.3f), SingleInstanceWorld) * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixMultiply(XMMatrixScaling(0.3f, 0.3f, 0.3f), SingleInstanceWorld) * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
@@ -984,7 +993,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//TODO: Read down from here, follow step by step instatiation of ModelMesh and ModelShape to set up SphereMesh and SphereShape
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
+#if LOADED_BEAR == 2
+	ModelMesh = new RenderMesh(CleanupTexturedNormSpecShape);
+#else
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
+#endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
 

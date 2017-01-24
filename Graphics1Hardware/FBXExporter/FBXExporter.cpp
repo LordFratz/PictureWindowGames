@@ -73,12 +73,12 @@ FbxAMatrix FBXExporter::FBXExport::ConvertToDirectX(FbxAMatrix mat)
 	//rotation.Set(-rotation.mData[0], -rotation.mData[1], rotation.mData[2]);
 	//mat.SetT(translation);
 	//mat.SetR(rotation);
-	mat.mData[1].mData[3] = -mat.mData[1].mData[3];
+	mat.mData[0].mData[2] = -mat.mData[0].mData[2];
+	mat.mData[1].mData[2] = -mat.mData[1].mData[2];
+	mat.mData[2].mData[0] = -mat.mData[2].mData[0];
+	mat.mData[2].mData[1] = -mat.mData[2].mData[1];
 	mat.mData[2].mData[3] = -mat.mData[2].mData[3];
-	mat.mData[3].mData[1] = -mat.mData[3].mData[1];
 	mat.mData[3].mData[2] = -mat.mData[3].mData[2];
-	mat.mData[3].mData[4] = -mat.mData[3].mData[4];
-	mat.mData[4].mData[3] = -mat.mData[4].mData[3];
 	return mat;
 }
 
@@ -176,7 +176,10 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 					currAnim.FrameNum = i;
 					FbxAMatrix currentTransformOffset = NodeThing->EvaluateGlobalTransform(currTime) * geometryTransform;
 					//Matrix Conversion here
-					currAnim.GlobalTransform = ConvertToDirectX(currentTransformOffset.Inverse() * cl->GetLink()->EvaluateGlobalTransform(currTime));
+					//FbxAMatrix OffsetInverse = currentTransformOffset.Inverse();
+					//FbxAMatrix LinkGlobalTransform = cl->GetLink()->EvaluateGlobalTransform(currTime);
+					//currAnim.GlobalTransform = ConvertToDirectX(OffsetInverse * LinkGlobalTransform);
+					currAnim.GlobalTransform = ConvertToDirectX(cl->GetLink()->EvaluateGlobalTransform(currTime));
 					tempFrames.push_back(currAnim);
 				}
 				frames[ind] = tempFrames;
