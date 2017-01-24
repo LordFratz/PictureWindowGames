@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 1
+#define LOADED_BEAR 2
 
 struct ViewProj
 {
@@ -265,8 +265,8 @@ namespace
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
 		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
 #if LOADED_BEAR == 2
-		ID3D11ShaderResourceView* ShaderTextures[2] = { (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
-		context->PSSetShaderResources(0, 1, ShaderTextures);
+		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
+		context->PSSetShaderResources(0, 2, ShaderTextures);
 #else
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
