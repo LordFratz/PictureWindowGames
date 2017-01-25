@@ -264,12 +264,29 @@ namespace
 
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
 		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+#if LOADED_BEAR == 2
+		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
+		context->PSSetShaderResources(0, 2, ShaderTextures);
+#else
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
-
+#endif
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 	}
 
+	void CleanupTexturedNormSpecShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->Reset();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->Reset();
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)toClean[2];
+		Sampler->Reset();
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
+		Texture->Reset();
+		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
+		Texture->Reset();
+	}
 
 	/// <summary>
 	/// Generic TEXTURELESS RenderContext Function
@@ -482,20 +499,18 @@ namespace
 		bufferData->worldMatrix = Node.WorldMat;
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
-			bufferData->boneOffsets[i + 1] = data[i];
+			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
-			Whatchamacallit.push_back(XMFLOAT4X4());
-			XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
-			Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+			
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
@@ -524,18 +539,18 @@ namespace
 		{
 			bufferData->boneOffsets[i + 1] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
-			Whatchamacallit.push_back(XMFLOAT4X4());
-			XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
-			Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+			//Whatchamacallit.push_back(XMFLOAT4X4());
+			//XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
+			//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
@@ -575,7 +590,7 @@ namespace
 		auto Buffer3 = Microsoft::WRL::ComPtr<ID3D11Buffer>();
 		Node->m_deviceResources->GetD3DDevice()->CreateBuffer(&constBuffDesc, &BufferData, Buffer3.GetAddressOf());
 
-		ID3D11Buffer* buffers[2] = { ((Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[3])->Get(), Buffer3.Get() };
+		ID3D11Buffer* buffers[2] = { ((Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[3])->Get(), Buffer3.Get() };//
 		UINT stride[2] = { sizeof(VertexPositionUVWNorm), sizeof(XMFLOAT4X4) };
 		UINT offset[2] = { 0, 0 };
 		context->IASetVertexBuffers(0, 2, buffers, stride, offset); //breaking here
@@ -1023,7 +1038,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//TODO: Read down from here, follow step by step instatiation of ModelMesh and ModelShape to set up SphereMesh and SphereShape
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
+#if LOADED_BEAR == 2
+	ModelMesh = new RenderMesh(CleanupTexturedNormSpecShape);
+#else
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
+#endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
 #if LOADED_BEAR != 0
 	//ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
@@ -1097,7 +1116,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	auto SRV2 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
 	auto SRV3 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
-	auto SRV4 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
 
 	const size_t size1 = strlen("../Resources/MageNormal.dds") + 1;
 	wText = new wchar_t[size1];
@@ -1105,17 +1123,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV2->GetAddressOf(), 0);
 
-	const size_t size2 = strlen("../Resources/MageEmissive.dds") + 1;
-	wText = new wchar_t[size2];
-	mbstowcs_s(&empty, wText, size_t(size2), "../Resources/MageEmissive.dds", size_t(size2));
-
-	CreateDDSTextureFromFile(Device, wText, nullptr, SRV3->GetAddressOf(), 0);
+	ModelMesh->MeshData.push_back(SRV2);
 
 	const size_t size3 = strlen("../Resources/MageSpecular.dds") + 1;
 	wText = new wchar_t[size3];
 	mbstowcs_s(&empty, wText, size_t(size3), "../Resources/MageSpecular.dds", size_t(size3));
 
-	CreateDDSTextureFromFile(Device, wText, nullptr, SRV4->GetAddressOf(), 0);
+	CreateDDSTextureFromFile(Device, wText, nullptr, SRV3->GetAddressOf(), 0);
 
 	wText = NULL;
 	delete wText;
@@ -1420,7 +1434,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	std::vector<uint8_t> PSData2;
 	std::vector<uint8_t> GSData;
 	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
+#if LOADED_BEAR == 2
+	thing = ShaderLoader::LoadShader(PSData2, "MultiTexturedLitPixelShader.cso");
+#else
 	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
+#endif
 	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
 	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
