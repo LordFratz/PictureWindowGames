@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 2
+#define LOADED_BEAR 0
 
 struct ViewProj
 {
@@ -274,6 +274,19 @@ namespace
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 	}
 
+	void CleanupTexturedNormSpecShape(std::vector<void*> toClean)
+	{
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[0];
+		ShapeSubresource1->Reset();
+		auto ShapeSubresource2 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)toClean[1];
+		ShapeSubresource2->Reset();
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)toClean[2];
+		Sampler->Reset();
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
+		Texture->Reset();
+		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
+		Texture->Reset();
+	}
 
 	/// <summary>
 	/// Generic TEXTURELESS RenderContext Function
@@ -374,10 +387,6 @@ namespace
 		Sampler->Reset();
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
 		Texture->Reset();
-#if LOADED_BEAR == 2
-		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
-		Texture->Reset();
-#endif
 	}
 
 	void NoCleanup(std::vector<void*> toClean){}
@@ -490,17 +499,18 @@ namespace
 		bufferData->worldMatrix = Node.WorldMat;
 		for(int i = 0; i < interpolator->animation->bones.size(); i++)
 		{
-			bufferData->boneOffsets[i + 1] = data[i];
+			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
+			
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixMultiply(XMMatrixScaling(200.3f, 200.3f, 200.3f), SingleInstanceWorld) * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixMultiply(XMMatrixScaling(0.3f, 0.3f, 0.3f), SingleInstanceWorld) * skeleton->Bones[i].getLocal());
-				Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
 		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
@@ -513,6 +523,50 @@ namespace
 		delete toClean[1];
 		delete toClean[2];
 		delete toClean[3];
+	}
+
+	void ProperBlendedSkinnedUpdate(RenderShape &Node, float delta)
+	{
+		auto bufferData = (BoxSkinnedConstBuff*)Node.ShapeData[0];
+		auto Blender = (BlenderDataStorage*)Node.ShapeData[1];
+		auto skeleton = (Skeleton*)Node.ShapeData[2];
+		auto anim = (Animation*)Node.ShapeData[3];
+
+		auto CurrFrame = Blender->Update(delta);
+		auto data = skeleton->getBoneOffsets(CurrFrame, XMLoadFloat4x4(&Node.WorldMat));
+		bufferData->worldMatrix = Node.WorldMat;
+		for (int i = 0; i < Blender->Animations[0].bones.size(); i++)
+		{
+			bufferData->boneOffsets[i + 1] = data[i];
+			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
+			//Whatchamacallit.push_back(XMFLOAT4X4());
+			//XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
+			//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+			if (LOADED_BEAR == 1) {
+				Whatchamacallit.push_back(XMFLOAT4X4());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+			}
+			else {
+				Whatchamacallit.push_back(XMFLOAT4X4());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
+			}
+		}
+		*(BoxSkinnedConstBuff*)Node.ShapeData[0] = *bufferData;
+		delete[] data;
+	}
+
+	void CleanProperBlendedSkinnedUpdate(vector<void*> toClean)
+	{
+		delete toClean[0];
+		delete toClean[1];
+		delete toClean[2];
+		//animations
+		delete toClean[3];
+		delete toClean[4];
+		//delete toClean[5];
+		//delete toClean[6];
 	}
 
 	void SphereShape(RenderNode& RNode) {
@@ -944,7 +998,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	{
 		whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
 		whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
-		whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+		whatever::loadFile("../Resources/Box_WalkAnim.pwa", "../Resources/Box_Walk.fbx");
 	}
 	else if (LOADED_BEAR == 2) {
 		whatever::loadFile("../Resources/Mage_Mesh.pwm", "../Resources/BattleMageWhat.fbx");
@@ -984,9 +1038,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//TODO: Read down from here, follow step by step instatiation of ModelMesh and ModelShape to set up SphereMesh and SphereShape
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
+#if LOADED_BEAR == 2
+	ModelMesh = new RenderMesh(CleanupTexturedNormSpecShape);
+#else
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
+#endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
+#if LOADED_BEAR != 0
+	//ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
+#else
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
+#endif
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -1179,15 +1241,193 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 			XMMatrixDecompose(&blah, &anim1->bones[i].frames[1].rotation, &anim1->bones[i].frames[1].position, XMLoadFloat4x4(&tempMat));
 		}
 	}
-	Interpolator* interpolator = new Interpolator();
-	interpolator->animation = anim1;
-	ModelShape->ShapeData.push_back(ShapeData1);
-	ModelShape->ShapeData.push_back(interpolator);
-	ModelShape->ShapeData.push_back(skele1);
-	ModelShape->ShapeData.push_back(anim1);
 
 #endif
 
+#if LOADED_BEAR == 0
+	whatever::loadFile("../Resources/Box_JumpAnim.pwa", "../Resources/Box_Jump.fbx");
+#elif LOADED_BEAR == 1
+	whatever::loadFile("../Resources/Teddy_IdleAnim.pwa", "../Resources/Teddy_Idle.fbx");
+#elif LOADED_BEAR == 2
+	whatever::loadFile("../Resources/Mage_WalkAnim.pwa", "../Resources/BattleMage_Walk.fbx");
+#endif
+
+	numBones = whatever::GetBoneCount();
+	animKeyframes = whatever::GetBoneAnimationKeyFrames();
+	animtweens = whatever::GetAnimationKeyframeTweens();
+	Animation* anim2 = new Animation();
+
+#if 1
+	for (int i = 0; i < numBones; i++)
+	{
+		anim2->bones.push_back(Bone());
+		auto keyFrameCount = whatever::GetKeyFrameAmount(i);
+		if (keyFrameCount > 2)
+		{
+			for (int j = 0; j < keyFrameCount; j++)
+			{
+				anim2->bones[i].frames.push_back(Keyframe());
+				anim2->bones[i].frames[j].tweenTime = animtweens[i][j];
+				auto tempMat = XMFLOAT4X4(animKeyframes[i][j * 16 + 0], animKeyframes[i][j * 16 + 1], animKeyframes[i][j * 16 + 2], animKeyframes[i][j * 16 + 3],
+					animKeyframes[i][j * 16 + 4], animKeyframes[i][j * 16 + 5], animKeyframes[i][j * 16 + 6], animKeyframes[i][j * 16 + 7],
+					animKeyframes[i][j * 16 + 8], animKeyframes[i][j * 16 + 9], animKeyframes[i][j * 16 + 10], animKeyframes[i][j * 16 + 11],
+					animKeyframes[i][j * 16 + 12], animKeyframes[i][j * 16 + 13], animKeyframes[i][j * 16 + 14], animKeyframes[i][j * 16 + 15]);
+				XMMatrixDecompose(&blah, &anim2->bones[i].frames[j].rotation, &anim2->bones[i].frames[j].position, XMLoadFloat4x4(&tempMat));
+			}
+		}
+		else if (keyFrameCount == 0)
+		{
+			anim2->bones[i].frames.push_back(Keyframe());
+			anim2->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim2->bones[i].frames[0].rotation, &anim2->bones[i].frames[0].position, identity);
+			anim2->bones[i].frames.push_back(Keyframe());
+			anim2->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim2->bones[i].frames[1].rotation, &anim2->bones[i].frames[1].position, identity);
+		}
+		else
+		{
+			//HOW THE HECK DO YOU ONLY HAVE 1 ANIMATION FRAME?!?
+			auto tempMat = XMFLOAT4X4(animKeyframes[i][0], animKeyframes[i][1], animKeyframes[i][2], animKeyframes[i][3],
+				animKeyframes[i][4], animKeyframes[i][5], animKeyframes[i][6], animKeyframes[i][7],
+				animKeyframes[i][8], animKeyframes[i][9], animKeyframes[i][10], animKeyframes[i][11],
+				animKeyframes[i][12], animKeyframes[i][13], animKeyframes[i][14], animKeyframes[i][15]);
+			anim2->bones[i].frames.push_back(Keyframe());
+			anim2->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim2->bones[i].frames[0].rotation, &anim2->bones[i].frames[0].position, XMLoadFloat4x4(&tempMat));
+			anim2->bones[i].frames.push_back(Keyframe());
+			anim2->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim2->bones[i].frames[1].rotation, &anim2->bones[i].frames[1].position, XMLoadFloat4x4(&tempMat));
+		}
+	}
+#endif
+
+#if LOADED_BEAR == 0
+	whatever::loadFile("../Resources/Box_IdleAnim.pwa", "../Resources/Box_Idle.fbx");
+#elif LOADED_BEAR == 1
+	whatever::loadFile("../Resources/Teddy_Attack1Anim.pwa", "../Resources/Teddy_Attack1.fbx");
+#elif LOADED_BEAR == 2
+	whatever::loadFile("../Resources/Mage_IdleAnim.pwa", "../Resources/BattleMage_Idle.fbx");
+#endif
+
+	numBones = whatever::GetBoneCount();
+	animKeyframes = whatever::GetBoneAnimationKeyFrames();
+	animtweens = whatever::GetAnimationKeyframeTweens();
+	Animation* anim3 = new Animation();
+
+#if 1
+	for (int i = 0; i < numBones; i++)
+	{
+		anim3->bones.push_back(Bone());
+		auto keyFrameCount = whatever::GetKeyFrameAmount(i);
+		if (keyFrameCount > 2)
+		{
+			for (int j = 0; j < keyFrameCount; j++)
+			{
+				anim3->bones[i].frames.push_back(Keyframe());
+				anim3->bones[i].frames[j].tweenTime = animtweens[i][j];
+				auto tempMat = XMFLOAT4X4(animKeyframes[i][j * 16 + 0], animKeyframes[i][j * 16 + 1], animKeyframes[i][j * 16 + 2], animKeyframes[i][j * 16 + 3],
+					animKeyframes[i][j * 16 + 4], animKeyframes[i][j * 16 + 5], animKeyframes[i][j * 16 + 6], animKeyframes[i][j * 16 + 7],
+					animKeyframes[i][j * 16 + 8], animKeyframes[i][j * 16 + 9], animKeyframes[i][j * 16 + 10], animKeyframes[i][j * 16 + 11],
+					animKeyframes[i][j * 16 + 12], animKeyframes[i][j * 16 + 13], animKeyframes[i][j * 16 + 14], animKeyframes[i][j * 16 + 15]);
+				XMMatrixDecompose(&blah, &anim3->bones[i].frames[j].rotation, &anim3->bones[i].frames[j].position, XMLoadFloat4x4(&tempMat));
+			}
+		}
+		else if (keyFrameCount == 0)
+		{
+			anim3->bones[i].frames.push_back(Keyframe());
+			anim3->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim3->bones[i].frames[0].rotation, &anim3->bones[i].frames[0].position, identity);
+			anim3->bones[i].frames.push_back(Keyframe());
+			anim3->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim3->bones[i].frames[1].rotation, &anim3->bones[i].frames[1].position, identity);
+		}
+		else
+		{
+			//HOW THE HECK DO YOU ONLY HAVE 1 ANIMATION FRAME?!?
+			auto tempMat = XMFLOAT4X4(animKeyframes[i][0], animKeyframes[i][1], animKeyframes[i][2], animKeyframes[i][3],
+				animKeyframes[i][4], animKeyframes[i][5], animKeyframes[i][6], animKeyframes[i][7],
+				animKeyframes[i][8], animKeyframes[i][9], animKeyframes[i][10], animKeyframes[i][11],
+				animKeyframes[i][12], animKeyframes[i][13], animKeyframes[i][14], animKeyframes[i][15]);
+			anim3->bones[i].frames.push_back(Keyframe());
+			anim3->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim3->bones[i].frames[0].rotation, &anim3->bones[i].frames[0].position, XMLoadFloat4x4(&tempMat));
+			anim3->bones[i].frames.push_back(Keyframe());
+			anim3->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim3->bones[i].frames[1].rotation, &anim3->bones[i].frames[1].position, XMLoadFloat4x4(&tempMat));
+		}
+	}
+#endif
+
+#if LOADED_BEAR == 0
+	whatever::loadFile("../Resources/Box_AttackAnim.pwa", "../Resources/Box_Attack.fbx");
+#elif LOADED_BEAR == 1
+	whatever::loadFile("../Resources/Teddy_Attack2Anim.pwa", "../Resources/Teddy_Attack2.fbx");
+#elif LOADED_BEAR == 2
+	whatever::loadFile("../Resources/Mage_RunAnim.pwa", "../Resources/BattleMage_Run.fbx");
+#endif
+
+	numBones = whatever::GetBoneCount();
+	animKeyframes = whatever::GetBoneAnimationKeyFrames();
+	animtweens = whatever::GetAnimationKeyframeTweens();
+	Animation* anim4 = new Animation();
+
+#if 1
+	for (int i = 0; i < numBones; i++)
+	{
+		anim4->bones.push_back(Bone());
+		auto keyFrameCount = whatever::GetKeyFrameAmount(i);
+		if (keyFrameCount > 2)
+		{
+			for (int j = 0; j < keyFrameCount; j++)
+			{
+				anim4->bones[i].frames.push_back(Keyframe());
+				anim4->bones[i].frames[j].tweenTime = animtweens[i][j];
+				auto tempMat = XMFLOAT4X4(animKeyframes[i][j * 16 + 0], animKeyframes[i][j * 16 + 1], animKeyframes[i][j * 16 + 2], animKeyframes[i][j * 16 + 3],
+					animKeyframes[i][j * 16 + 4], animKeyframes[i][j * 16 + 5], animKeyframes[i][j * 16 + 6], animKeyframes[i][j * 16 + 7],
+					animKeyframes[i][j * 16 + 8], animKeyframes[i][j * 16 + 9], animKeyframes[i][j * 16 + 10], animKeyframes[i][j * 16 + 11],
+					animKeyframes[i][j * 16 + 12], animKeyframes[i][j * 16 + 13], animKeyframes[i][j * 16 + 14], animKeyframes[i][j * 16 + 15]);
+				XMMatrixDecompose(&blah, &anim4->bones[i].frames[j].rotation, &anim4->bones[i].frames[j].position, XMLoadFloat4x4(&tempMat));
+			}
+		}
+		else if (keyFrameCount == 0)
+		{
+			anim4->bones[i].frames.push_back(Keyframe());
+			anim4->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim4->bones[i].frames[0].rotation, &anim4->bones[i].frames[0].position, identity);
+			anim4->bones[i].frames.push_back(Keyframe());
+			anim4->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim4->bones[i].frames[1].rotation, &anim4->bones[i].frames[1].position, identity);
+		}
+		else
+		{
+			//HOW THE HECK DO YOU ONLY HAVE 1 ANIMATION FRAME?!?
+			auto tempMat = XMFLOAT4X4(animKeyframes[i][0], animKeyframes[i][1], animKeyframes[i][2], animKeyframes[i][3],
+				animKeyframes[i][4], animKeyframes[i][5], animKeyframes[i][6], animKeyframes[i][7],
+				animKeyframes[i][8], animKeyframes[i][9], animKeyframes[i][10], animKeyframes[i][11],
+				animKeyframes[i][12], animKeyframes[i][13], animKeyframes[i][14], animKeyframes[i][15]);
+			anim4->bones[i].frames.push_back(Keyframe());
+			anim4->bones[i].frames[0].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim4->bones[i].frames[0].rotation, &anim4->bones[i].frames[0].position, XMLoadFloat4x4(&tempMat));
+			anim4->bones[i].frames.push_back(Keyframe());
+			anim4->bones[i].frames[1].tweenTime = 1000;
+			XMMatrixDecompose(&blah, &anim4->bones[i].frames[1].rotation, &anim4->bones[i].frames[1].position, XMLoadFloat4x4(&tempMat));
+		}
+	}
+#endif
+
+	BlenderDataStorage* Blender = new BlenderDataStorage();
+	Blender->Animations.push_back(*anim1);
+	Blender->Animations.push_back(*anim2);
+	Blender->Animations.push_back(*anim3);
+	Blender->Animations.push_back(*anim4);
+	Blender->From.animation = anim1;
+	ModelShape->ShapeData.push_back(ShapeData1);
+	ModelShape->ShapeData.push_back(Blender);
+	ModelShape->ShapeData.push_back(skele1);
+	ModelShape->ShapeData.push_back(anim1);
+	ModelShape->ShapeData.push_back(anim2);
+	ModelShape->ShapeData.push_back(anim3);
+	ModelShape->ShapeData.push_back(anim4);
 
 
 	std::vector<uint8_t> VSData2;

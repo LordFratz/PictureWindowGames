@@ -24,10 +24,9 @@ struct sphere
 struct Keyframe
 {
 public:
-	float tweenTime;
 	XMVECTOR rotation;
 	XMVECTOR position;
-
+	float tweenTime;
 	XMMATRIX getMat()
 	{
 		const XMFLOAT3 one = XMFLOAT3(1, 1, 1);
@@ -59,9 +58,9 @@ struct PerBoneData
 
 class Interpolator
 {
-	std::vector<PerBoneData> perBoneData = std::vector<PerBoneData>();
 	bool initializedData = false;
 public:
+	std::vector<PerBoneData> perBoneData = std::vector<PerBoneData>();
 	Animation* animation;
 	bool KeyboardControl = true;
 	bool changedLastFrame;
@@ -191,7 +190,7 @@ public:
 		}
 	}
 
-	Keyframe Interpolate(Keyframe currFrame, Keyframe nextFrame, float ratio)
+	 Keyframe __fastcall Interpolate(Keyframe currFrame, Keyframe nextFrame, float ratio)
 	{
 		Keyframe rv = Keyframe();
 		rv.rotation = XMQuaternionSlerp(currFrame.rotation, nextFrame.rotation, ratio);
@@ -207,40 +206,42 @@ struct BlenderDataStorage
 	std::vector<Animation> Animations;
 	float TranstionTimer;
 	bool IsBlending;
+	bool IsAnimating;
 	int FromAnimNum = 0, ToAnimNum = -1;
 
 	currFrame Update(float delta)
 	{
 		From.Update(delta);
 		auto rv = From.CurrFrame;
+		To.KeyboardControl = From.KeyboardControl;
 
 		//Do Input Logic
 		int numAnims = (int)Animations.size();
-		if(GetAsyncKeyState(0x30) && numAnims > 0 && FromAnimNum != 0 && ToAnimNum != 0) //1
+		if(GetAsyncKeyState(0x31) && numAnims > 0 && FromAnimNum != 0 && ToAnimNum != 0) //1
 		{
 			ToAnimNum = 0;
 			IsBlending = true;
 			To.animation = &Animations[0];
 		}
-		else if(GetAsyncKeyState(0x31) && numAnims > 1 && FromAnimNum != 1 && ToAnimNum != 1) //2
+		else if(GetAsyncKeyState(0x32) && numAnims > 1 && FromAnimNum != 1 && ToAnimNum != 1) //2
 		{
 			ToAnimNum = 1;
 			IsBlending = true;
 			To.animation = &Animations[1];
 		}
-		else if(GetAsyncKeyState(0x32) && numAnims > 2 && FromAnimNum != 2 && ToAnimNum != 2) //3
+		else if(GetAsyncKeyState(0x33) && numAnims > 2 && FromAnimNum != 2 && ToAnimNum != 2) //3
 		{
 			ToAnimNum = 2;
 			IsBlending = true;
 			To.animation = &Animations[2];
 		}
-		else if(GetAsyncKeyState(0x33) && numAnims > 3 && FromAnimNum != 3 && ToAnimNum != 3) //4
+		else if(GetAsyncKeyState(0x34) && numAnims > 3 && FromAnimNum != 3 && ToAnimNum != 3) //4
 		{
 			ToAnimNum = 3;
 			IsBlending = true;
 			To.animation = &Animations[3];
 		}
-		else if (GetAsyncKeyState(0x34) && numAnims > 4 && FromAnimNum != 4 && ToAnimNum != 4) //5
+		else if (GetAsyncKeyState(0x35) && numAnims > 4 && FromAnimNum != 4 && ToAnimNum != 4) //5
 		{
 			ToAnimNum = 4;
 			IsBlending = true;
@@ -257,7 +258,8 @@ struct BlenderDataStorage
 			{
 				TranstionTimer = 0.0f;
 				IsBlending = false;
-				From = To;
+				From.perBoneData = To.perBoneData;
+				From.animation = To.animation;
 				To = Interpolator();
 				FromAnimNum = ToAnimNum;
 				ToAnimNum = -1;
@@ -302,6 +304,8 @@ public:
 			if (parent != nullptr)
 			{
 				world = XMMatrixInverse(nullptr, parent->getWorld()) * local;
+				//world = local * parent->getWorld();
+				//world = parent->getWorld() * local;
 			}
 			else
 			{
@@ -346,7 +350,7 @@ struct Skeleton
 		XMStoreFloat4x4(&offsets[0], XMMatrixIdentity());
 		for(int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			auto val = frame.thisFrame[i].getMat();
+			XMMATRIX val = frame.thisFrame[i].getMat();
 			Bones[i].setLocal(val);
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
