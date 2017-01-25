@@ -38,6 +38,7 @@ namespace FBXExporter
 		std::vector<Vertex> Verts;
 		std::vector<Vertex> Normals;
 		std::vector<Vertex> UVs;
+		std::vector<Vertex> tangents; //only for things with normal maps
 		std::vector<int> Indecies;
 		std::vector<int> CompInds;
 		std::vector<Bone> Skeleton;

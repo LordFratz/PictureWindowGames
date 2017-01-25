@@ -12,7 +12,7 @@
 //--------------------------------------------------------------------------------
 
 //Change this when any changes are done to the struct ExporterHeader
-#define EXPORTER_VERSION_NUMBER 55
+#define EXPORTER_VERSION_NUMBER 59
 //--------------------------------------------------------------------------------
 namespace FileInfo {
 	enum class FILE_TYPES : uint8_t { MESH, BIND_POSE, ANIMATION, NAV_MESH, ERROR_TYPE };

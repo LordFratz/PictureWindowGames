@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 2
 
 struct ViewProj
 {
@@ -265,8 +265,8 @@ namespace
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
 		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
 #if LOADED_BEAR == 2
-		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
-		context->PSSetShaderResources(0, 2, ShaderTextures);
+		ID3D11ShaderResourceView* ShaderTextures[3] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[5])->Get() };
+		context->PSSetShaderResources(0, 3, ShaderTextures);
 #else
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
@@ -285,6 +285,8 @@ namespace
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
 		Texture->Reset();
 		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
+		Texture->Reset();
+		auto SpecTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[5];
 		Texture->Reset();
 	}
 
@@ -1044,11 +1046,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 #endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-#if LOADED_BEAR != 0
-	//ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
-#else
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
-#endif
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -1112,7 +1110,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 #if LOADED_BEAR == 2
 
-	//Loads Normal / Emissive / Specular Texture maps when the mage is being loaded in for the mage
+	//Loads Normal / Specular Texture maps when the mage is being loaded in for the mage
 
 	auto SRV2 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
 	auto SRV3 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
@@ -1130,6 +1128,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	mbstowcs_s(&empty, wText, size_t(size3), "../Resources/MageSpecular.dds", size_t(size3));
 
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV3->GetAddressOf(), 0);
+
+	ModelMesh->MeshData.push_back(SRV3);
 
 	wText = NULL;
 	delete wText;
