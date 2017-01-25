@@ -501,7 +501,7 @@ namespace
 		{
 			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
-			
+
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
@@ -537,7 +537,7 @@ namespace
 		bufferData->worldMatrix = Node.WorldMat;
 		for (int i = 0; i < Blender->Animations[0].bones.size(); i++)
 		{
-			bufferData->boneOffsets[i + 1] = data[i];
+			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
 			//Whatchamacallit.push_back(XMFLOAT4X4());
 			//XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
@@ -1192,8 +1192,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 								   boneMats[i][8], boneMats[i][9], boneMats[i][10], boneMats[i][11],
 								   boneMats[i][12], boneMats[i][13], boneMats[i][14], boneMats[i][15]);
 
-		XMStoreFloat4x4(&ShapeData1->boneOffsets[i + 1], XMMatrixInverse(nullptr, XMLoadFloat4x4(&currBind)));
-		//ShapeData1->boneOffsets[i + 1] = currBind;
+		//XMStoreFloat4x4(&ShapeData1->boneOffsets[i + 1], XMMatrixInverse(nullptr, XMLoadFloat4x4(&currBind)));
+		ShapeData1->boneOffsets[i + 1] = currBind;
 
 		skele1->InverseBindMats.push_back(XMLoadFloat4x4(&ShapeData1->boneOffsets[i + 1]));
 		skele1->Bones.push_back(TransformNode());
