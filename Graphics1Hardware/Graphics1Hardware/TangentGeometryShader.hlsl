@@ -142,11 +142,11 @@ void main(
 		pos.z = cameraPosition.z;
 		element.cameraPos = pos;
 		float Det = 1;
-		if (element.pos.x < 0) {
+		if (input[i].pos.x < 0) {
 			Det = -1;
 		}
 		float4 T = normalize(mul(worldMatrix, input[i].tan));
-		float4 B = normalize(mul(worldMatrix, float4(cross(float3(input[i].tan.x, input[i].tan.y, input[i].tan.z), float3(element.norm.x, element.norm.y, element.norm.z)), 0)));
+		float4 B = normalize(mul(worldMatrix, float4(cross(float3(element.norm.x, element.norm.y, element.norm.z), float3(input[i].tan.x, input[i].tan.y, input[i].tan.z)), 0)));
 		float4 N = normalize(mul(worldMatrix, element.norm)) * Det;
 		float4 BottomRow = float4(0, 0, 0, 1);
 		element.tbn = matrix(T, B, N, BottomRow);

@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 2
 
 struct ViewProj
 {
@@ -299,9 +299,9 @@ namespace
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
 		Texture->Reset();
 		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
-		Texture->Reset();
+		NormalTexture->Reset();
 		auto SpecTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[5];
-		Texture->Reset();
+		SpecTexture->Reset();
 	}
 
 	/// <summary>
