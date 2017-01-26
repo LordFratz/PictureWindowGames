@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 2
+#define LOADED_BEAR 0
 
 struct ViewProj
 {
@@ -328,7 +328,7 @@ namespace
 
 
 #if LOADED_BEAR == 2
-		//ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
+		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
 		context->PSSetShaderResources(0, 2, ShaderTextures);
 #else
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
@@ -1104,7 +1104,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	//pass thru VS
 	std::vector<uint8_t> passVSData;
-	ShaderLoader::LoadShader(passVSData, "InstancedPassVS.cso");
+	ShaderLoader::LoadShader(passVSData, "InstancePassVS.cso");
 	Device->CreateVertexShader(&passVSData[0], passVSData.size(), NULL, passVS.GetAddressOf());
 
 	//blue ps
@@ -1226,7 +1226,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	//initialize stream out buffer
 	//*******************************************
-	int streamBuffSize = numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
+	int streamBuffSize = 1000000; //numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
 	D3D11_BUFFER_DESC streamBuffDesc = { streamBuffSize, D3D11_USAGE_DEFAULT, D3D11_BIND_STREAM_OUTPUT | D3D11_BIND_VERTEX_BUFFER, 0, 0, 0 };
 	Device->CreateBuffer(&streamBuffDesc, nullptr, streamedOutput.GetAddressOf());
 	//******************************************
@@ -1255,14 +1255,14 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		SkinnedVertexBuffer[i] = Temp;
 	}
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
-	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
+	ModelContext = new RenderContext(devResources, ModelGeoInstancedShadowContext, CleanupPlaneContext, false);
 #if LOADED_BEAR == 2
 	ModelMesh = new RenderMesh(CleanupTexturedNormSpecShape);
 #else
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 #endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShadowShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -1753,9 +1753,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateRasterizerState(&rasterStateDescriptor, rasterState.GetAddressOf());
 
 	ModelContext->AddChild(ModelShape);
-	ModelContext->AddChild(planeContext);
-	ModelContext->AddChild(planeShape);
-	ModelContext->AddChild(SphereShapething);
+	//ModelContext->AddChild(planeContext);
+	//ModelContext->AddChild(planeShape);
+	//ModelContext->AddChild(SphereShapething);
 
 	//planeContext->AddChild(planeShape);
 	//planeContext->AddChild(ModelContext);

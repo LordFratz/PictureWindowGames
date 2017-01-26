@@ -91,7 +91,7 @@ struct GSOutput
 	float4 surfacePos : SURPOS;
 	float4 cameraPos : CAMPOS;
 	float4 depthPosition: TEXTURE0;
-	float4 lightViewPosition : TEXCOORD1;
+	float4 lightViewPosition : TEXTURE1;
 };
 
 cbuffer LightViewBuffer : register(b7)
