@@ -259,7 +259,7 @@ namespace
 	{
 		auto Node = &(RenderContext&)rNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
-		
+
 		context->IASetInputLayout(Node->m_inputLayout.Get());
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
@@ -268,7 +268,7 @@ namespace
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
-		
+
 
 
 
@@ -279,7 +279,7 @@ namespace
 
 
 		//yet to be used
-		
+
 	}
 
 	void SkinnedGeoInstancedShadowShape(RenderNode &rNode)
@@ -300,7 +300,7 @@ namespace
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 
 		//Pass 0 complete
-		
+
 		context->VSSetShader(passVS.Get(), nullptr, 0);
 		context->GSSetShader(Node->Context.m_geometryShader.Get(), nullptr, 0);
 		context->PSSetShader(depthPS.Get(), nullptr, 0);
@@ -313,7 +313,7 @@ namespace
 		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 		context->GSSetConstantBuffers(7, 1, lightViewBuff.GetAddressOf());
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
-		
+
 
 		 //Pass 1 complete
 
@@ -328,7 +328,7 @@ namespace
 
 
 #if LOADED_BEAR == 2
-		//ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
+		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
 		context->PSSetShaderResources(0, 2, ShaderTextures);
 #else
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
@@ -1020,7 +1020,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end light initializations
 
 	//Prepass initializations
-	
+
     //Creating the Shadow Map texture
 	D3D11_TEXTURE2D_DESC shadowMapDesc;
 	ZeroMemory(&shadowMapDesc, sizeof(shadowMapDesc));
@@ -1042,7 +1042,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	shadowRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	shadowRTVDesc.Texture2D.MipSlice = 0;
 	Device->CreateRenderTargetView(theShadowMap.Get(), &shadowRTVDesc, shadowRTV.GetAddressOf());
-	
+
 	//binding shadow map as a shader resource
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc;
 	shadowSRVDesc.Format = shadowMapDesc.Format;
@@ -1065,7 +1065,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-	
+
     //create new depth render to texture pixel shader
 	std::vector<uint8_t> shadowPSData;
 	ShaderLoader::LoadShader(shadowPSData, "DepthMapPS.cso");
@@ -1075,11 +1075,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	std::vector<uint8_t> nullGSData;
 	ShaderLoader::LoadShader(nullGSData, "VSforNullGS.cso");
 
-	
+
 	D3D11_SO_DECLARATION_ENTRY SODecl[] =
 	{
-		{ 0, "SV_POSITION", 0, 0, 4, 0 },   
-		{ 0, "UVW", 0, 0, 4, 0 },     
+		{ 0, "SV_POSITION", 0, 0, 4, 0 },
+		{ 0, "UVW", 0, 0, 4, 0 },
 		{ 0, "NORM", 0, 0, 4, 0 },
 	};
 	Device->CreateGeometryShaderWithStreamOutput(&nullGSData[0], nullGSData.size(), SODecl, ARRAYSIZE(SODecl), NULL, 0, 0, NULL, nullSOGS.GetAddressOf());
@@ -1226,7 +1226,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	//initialize stream out buffer
 	//*******************************************
-	int streamBuffSize = numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
+	UINT streamBuffSize = numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
 	D3D11_BUFFER_DESC streamBuffDesc = { streamBuffSize, D3D11_USAGE_DEFAULT, D3D11_BIND_STREAM_OUTPUT | D3D11_BIND_VERTEX_BUFFER, 0, 0, 0 };
 	Device->CreateBuffer(&streamBuffDesc, nullptr, streamedOutput.GetAddressOf());
 	//******************************************
