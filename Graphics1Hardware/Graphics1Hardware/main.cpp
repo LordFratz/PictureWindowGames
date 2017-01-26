@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 2
 
 struct ViewProj
 {
@@ -73,6 +73,16 @@ struct SkinnedVert
 	XMFLOAT4 Norm;
 	XMFLOAT4 Weights;
 	XMINT4   Indices;
+};
+
+struct TangentSkinnedVert
+{
+	XMFLOAT4 pos;
+	XMFLOAT4 UVW;
+	XMFLOAT4 Norm;
+	XMFLOAT4 Weights;
+	XMINT4   Indices;
+	XMFLOAT4 Tangents;
 };
 
 struct BoxSkinnedConstBuff
@@ -257,7 +267,11 @@ namespace
 		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 
 		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+#if LOADED_BEAR == 2
+		UINT stride = sizeof(TangentSkinnedVert);
+#else
 		UINT stride = sizeof(SkinnedVert);
+#endif
 		UINT offset = 0;
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -265,8 +279,8 @@ namespace
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
 		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
 #if LOADED_BEAR == 2
-		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
-		context->PSSetShaderResources(0, 2, ShaderTextures);
+		ID3D11ShaderResourceView* ShaderTextures[3] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[5])->Get() };
+		context->PSSetShaderResources(0, 3, ShaderTextures);
 #else
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
@@ -285,6 +299,8 @@ namespace
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[3];
 		Texture->Reset();
 		auto NormalTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[4];
+		Texture->Reset();
+		auto SpecTexture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)toClean[5];
 		Texture->Reset();
 	}
 
@@ -776,13 +792,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #endif
 	//********************* END WARNING ************************//
 
-	//Loads in data from fbx file into FBX with examples
-	//whatever::loadFile("../Resources/Box_Jump.fbx");
-	//float** BoneMatTest = whatever::GetBoneBindMat();
-	//int** BoneVertTest = whatever::GetBoneVertInds();
-	//float** BoneWeightTest = whatever::GetBoneWeights();
-	//int* BoneParentTest = whatever::GetParentInds();
-
 	devResources = make_shared<DeviceResources>();
 	devResources->initialize(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, window);
 
@@ -800,17 +809,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-
-	//auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
-	//auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
 	std::vector<uint8_t> VSData;
 	std::vector<uint8_t> PSData;
 	bool thing = ShaderLoader::LoadShader(VSData, "BasicToLightVertexShader.cso");
 	thing = ShaderLoader::LoadShader(PSData, "BasicLightPixelShader.cso");
 	Device->CreateVertexShader(&VSData[0], VSData.size(), NULL, planeContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&PSData[0], PSData.size(), NULL, planeContext->m_pixelShader.GetAddressOf());
-	//Device->CreateVertexShader(&BasicToLightVertexShader, ARRAYSIZE(BasicToLightVertexShader), NULL, planeContext->m_vertexShader.GetAddressOf());
-	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, planeContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -902,7 +906,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end Sphere initializations :: VertexBuffer/IndexBuffer
 
 	//Light initializations
-	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
 
@@ -1025,10 +1029,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//}
 	int** BoneIndices = whatever::GetVertToBoneInds();
 	float** BoneWeights = whatever::GetVertWeightToBoneInds();
+#if LOADED_BEAR != 2
 	SkinnedVert* SkinnedVertexBuffer = new SkinnedVert[numVerts];
+#else
+	TangentSkinnedVert* SkinnedVertexBuffer = new TangentSkinnedVert[numVerts];
+	float* Tangents = whatever::GetTangents();
+#endif
 	for(int i = 0; i < numVerts; i++)
 	{
+#if LOADED_BEAR != 2
 		SkinnedVert Temp;
+#else
+		TangentSkinnedVert Temp;
+		Temp.Tangents = XMFLOAT4(Tangents[i * 4], Tangents[i * 4 + 1], Tangents[i * 4 + 2], Tangents[i * 4 + 3]);
+#endif
 		Temp.pos = XMFLOAT4(Verts[i * 4], Verts[i * 4 + 1], Verts[i * 4 + 2], Verts[i * 4 + 3]);
 		Temp.UVW = XMFLOAT4(UVs[i * 2], UVs[i * 2 + 1], 0, 0);
 		Temp.Norm = XMFLOAT4(Norms[i * 4], Norms[i * 4 + 1], Norms[i * 4 + 2], Norms[i * 4 + 3]);
@@ -1036,7 +1050,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		Temp.Indices = XMINT4(BoneIndices[i][0] + 1, BoneIndices[i][1] + 1, BoneIndices[i][2] + 1, BoneIndices[i][3] + 1);
 		SkinnedVertexBuffer[i] = Temp;
 	}
-	//TODO: Read down from here, follow step by step instatiation of ModelMesh and ModelShape to set up SphereMesh and SphereShape
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
 #if LOADED_BEAR == 2
@@ -1066,7 +1079,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.pSysMem = SkinnedVertexBuffer;
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
+#if LOADED_BEAR != 2
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(SkinnedVert) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+#else
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(TangentSkinnedVert) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+#endif
 	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer10->GetAddressOf());
@@ -1109,7 +1126,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 #if LOADED_BEAR == 2
 
-	//Loads Normal / Emissive / Specular Texture maps when the mage is being loaded in for the mage
+	//Loads Normal / Specular Texture maps when the mage is being loaded in for the mage
 
 	auto SRV2 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
 	auto SRV3 = new Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>();
@@ -1127,6 +1144,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	mbstowcs_s(&empty, wText, size_t(size3), "../Resources/MageSpecular.dds", size_t(size3));
 
 	CreateDDSTextureFromFile(Device, wText, nullptr, SRV3->GetAddressOf(), 0);
+
+	ModelMesh->MeshData.push_back(SRV3);
 
 	wText = NULL;
 	delete wText;
@@ -1430,27 +1449,38 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	std::vector<uint8_t> VSData2;
 	std::vector<uint8_t> PSData2;
 	std::vector<uint8_t> GSData;
-	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
 #if LOADED_BEAR == 2
+	thing = ShaderLoader::LoadShader(VSData2, "ToMultitextuedPixelShader.cso"); //actually is a vertex shader, just weirdly named
 	thing = ShaderLoader::LoadShader(PSData2, "MultiTexturedLitPixelShader.cso");
-#else
-	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
-#endif
-	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
+	thing = ShaderLoader::LoadShader(GSData, "TangentGeometryShader.cso");
 	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	Device->CreateGeometryShader(&GSData[0], GSData.size(), NULL, ModelContext->m_geometryShader.GetAddressOf());
-	//Device->CreateVertexShader(&BasicLitSkinningVertShader, ARRAYSIZE(BasicLitSkinningVertShader), NULL, ModelContext->m_vertexShader.GetAddressOf());
-	//Device->CreateGeometryShader(&BasicGeometryShader, ARRAYSIZE(BasicGeometryShader), NULL, ModelContext->m_geometryShader.GetAddressOf());
-	//Device->CreatePixelShader(&BasicLightPixelShader, ARRAYSIZE(BasicLightPixelShader), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{ "INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
+#else
+	thing = ShaderLoader::LoadShader(VSData2, "BasicLitSkinningVertShader.cso");
+	thing = ShaderLoader::LoadShader(PSData2, "BasicLightPixelShader.cso");
+	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
+	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
+	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
+	Device->CreateGeometryShader(&GSData[0], GSData.size(), NULL, ModelContext->m_geometryShader.GetAddressOf());
+	static const D3D11_INPUT_ELEMENT_DESC vertexDesc2[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UVW", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+#endif
 
 	Device->CreateInputLayout(vertexDesc2, ARRAYSIZE(vertexDesc2), &VSData2[0], VSData2.size(), ModelContext->m_inputLayout.GetAddressOf());
 
@@ -1489,7 +1519,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionColor) * 12, D3D11_BIND_VERTEX_BUFFER);
-	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer100 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData, Buffer100->GetAddressOf());
 	SphereMeshthing->MeshData.push_back(Buffer100);
@@ -1502,7 +1531,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	BufferData.SysMemPitch = 0;
 	BufferData.SysMemSlicePitch = 0;
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(short) * SphereMeshthing->m_indexCount, D3D11_BIND_INDEX_BUFFER);
-	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	Device->CreateBuffer(&constBuffDesc, &BufferData, SphereMeshthing->m_indexBuffer.GetAddressOf());
 
 	int* tempBones = new int;

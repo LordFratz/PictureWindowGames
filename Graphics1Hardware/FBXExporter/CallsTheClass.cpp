@@ -312,3 +312,15 @@ float ** whatever::GetAnimationKeyframeTweens()
 	}
 	return Tweens;
 }
+
+float * whatever::GetTangents()
+{
+	float* T = new float[MyExporter.tangents.size() * 4];
+	for (int i = 0; i < MyExporter.tangents.size(); i++) {
+		T[i * 4 + 0] = MyExporter.tangents[i].pos[0];
+		T[i * 4 + 1] = MyExporter.tangents[i].pos[1];
+		T[i * 4 + 2] = MyExporter.tangents[i].pos[2];
+		T[i * 4 + 3] = MyExporter.tangents[i].pos[3];
+	}
+	return T;
+}
