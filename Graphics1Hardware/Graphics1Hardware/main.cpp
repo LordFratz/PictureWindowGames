@@ -161,6 +161,23 @@ static Microsoft::WRL::ComPtr<ID3D11Buffer> LightBuff;
 static Microsoft::WRL::ComPtr<ID3D11Buffer> InstanceBuff;
 static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterWireState;
 static Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterState;
+
+static Microsoft::WRL::ComPtr<ID3D11Texture2D> theShadowMap;
+static Microsoft::WRL::ComPtr<ID3D11Texture2D> theEmptyMap;
+static Microsoft::WRL::ComPtr<ID3D11RenderTargetView> shadowRTV;
+static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowSRV;
+static Microsoft::WRL::ComPtr<ID3D11Buffer> streamedOutput;
+static Microsoft::WRL::ComPtr<ID3D11PixelShader> depthPS;
+static Microsoft::WRL::ComPtr<ID3D11GeometryShader> nullSOGS;
+static Microsoft::WRL::ComPtr<ID3D11Buffer> lightViewBuff;
+static Microsoft::WRL::ComPtr<ID3D11SamplerState> clampSamp;
+static Microsoft::WRL::ComPtr<ID3D11VertexShader> passVS;
+static Microsoft::WRL::ComPtr<ID3D11PixelShader> passPS;
+static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> emptySRV;
+
+
+static ViewProj lightViewPoint;
+
 static XMMATRIX SingleInstanceWorld;
 //************************************************************
 //************ SIMPLE WINDOWS APP CLASS **********************
@@ -228,6 +245,89 @@ public:
 
 namespace
 {
+	void ModelGeoInstancedShadowContext(RenderNode& rNode)
+	{
+		auto Node = &(RenderContext&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+		
+		context->IASetInputLayout(Node->m_inputLayout.Get());
+		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
+		context->GSSetShader(nullSOGS.Get(), nullptr, 0);
+		context->PSSetShader(passPS.Get(), nullptr, 0);
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
+		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
+		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		
+
+
+
+		//context->GSSetShader(Node->m_geometryShader.Get(), nullptr, 0);
+
+		//context->GSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		//context->GSSetConstantBuffers(5, 1, InstanceBuff.GetAddressOf());
+
+
+		//yet to be used
+		
+	}
+
+	void SkinnedGeoInstancedShadowShape(RenderNode &rNode)
+	{
+		auto Node = &(RenderShape&)rNode;
+		auto context = Node->m_deviceResources->GetD3DDeviceContext();
+
+		auto ShapeSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[0];
+		context->UpdateSubresource(ShapeSubresource1->Get(), 0, NULL, (BoxSkinnedConstBuff*)Node->ShapeData[0], 0, 0);
+		context->VSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+
+
+		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+		UINT stride = sizeof(SkinnedVert);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
+		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+
+		//Pass 0 complete
+		
+		context->VSSetShader(passVS.Get(), nullptr, 0);
+		context->GSSetShader(Node->Context.m_geometryShader.Get(), nullptr, 0);
+		context->PSSetShader(depthPS.Get(), nullptr, 0);
+		stride = sizeof(VertexPositionUVWNorm);
+		context->IASetVertexBuffers(0, 1, streamedOutput.GetAddressOf(), &stride, &offset);
+		context->OMSetRenderTargets(1, shadowRTV.GetAddressOf(), Node->m_deviceResources->GetDepthStencilView());
+		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Context.ContextData[0];
+		context->GSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
+		context->GSSetConstantBuffers(5, 1, InstanceBuff.GetAddressOf());
+		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
+		context->GSSetConstantBuffers(7, 1, lightViewBuff.GetAddressOf());
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+		
+
+		 //Pass 1 complete
+
+		auto targetView = Node->m_deviceResources->GetBackBufferRenderTargetView();
+		context->OMSetRenderTargets(1, &targetView, Node->m_deviceResources->GetDepthStencilView());
+		context->PSSetShader(Node->Context.m_pixelShader.Get(), nullptr, 0);
+		context->PSSetConstantBuffers(2, 1, LightBuff.GetAddressOf());
+		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
+		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		context->PSSetSamplers(1, 1, clampSamp.GetAddressOf());
+		context->PSSetShaderResources(5, 1, shadowSRV.GetAddressOf());
+
+
+#if LOADED_BEAR == 2
+		//ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
+		context->PSSetShaderResources(0, 2, ShaderTextures);
+#else
+		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
+		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
+#endif
+		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+		context->PSSetShaderResources(5, 1, emptySRV.GetAddressOf());
+	}
+
 	void ModelGeoInstancedContext(RenderNode& rNode)
 	{
 		auto Node = &(RenderContext&)rNode;
@@ -901,7 +1001,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end Sphere initializations :: VertexBuffer/IndexBuffer
 
 	//Light initializations
-	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
 
@@ -913,6 +1013,102 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//auto Buffer4 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
 	Device->CreateBuffer(&constBuffDesc, &BufferData2, LightBuff.GetAddressOf());
 	//end light initializations
+
+	//Prepass initializations
+	
+    //Creating the Shadow Map texture
+	D3D11_TEXTURE2D_DESC shadowMapDesc;
+	ZeroMemory(&shadowMapDesc, sizeof(shadowMapDesc));
+	shadowMapDesc.Width = BACKBUFFER_WIDTH;
+	shadowMapDesc.Height = BACKBUFFER_HEIGHT;
+	shadowMapDesc.MipLevels = 1;
+	shadowMapDesc.ArraySize = 1;
+	shadowMapDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	shadowMapDesc.SampleDesc.Count = 1;
+	shadowMapDesc.Usage = D3D11_USAGE_DEFAULT;
+	shadowMapDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	shadowMapDesc.CPUAccessFlags = 0;
+	shadowMapDesc.MiscFlags = 0;
+	Device->CreateTexture2D(&shadowMapDesc, nullptr, theShadowMap.GetAddressOf());
+	Device->CreateTexture2D(&shadowMapDesc, nullptr, theEmptyMap.GetAddressOf());
+	//binding shadow map as a render target
+	D3D11_RENDER_TARGET_VIEW_DESC shadowRTVDesc;
+	shadowRTVDesc.Format = shadowMapDesc.Format;
+	shadowRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	shadowRTVDesc.Texture2D.MipSlice = 0;
+	Device->CreateRenderTargetView(theShadowMap.Get(), &shadowRTVDesc, shadowRTV.GetAddressOf());
+	
+	//binding shadow map as a shader resource
+	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc;
+	shadowSRVDesc.Format = shadowMapDesc.Format;
+	shadowSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shadowSRVDesc.Texture2D.MostDetailedMip = 0;
+	shadowSRVDesc.Texture2D.MipLevels = 1;
+	Device->CreateShaderResourceView(theShadowMap.Get(), &shadowSRVDesc, shadowSRV.GetAddressOf());
+	Device->CreateShaderResourceView(theEmptyMap.Get(), &shadowSRVDesc, emptySRV.GetAddressOf());
+	//build view and projection matricies from the viewpoint of the light source ORTHOGRAPHIC due to directional light
+	XMStoreFloat4x4(&lightViewPoint.view, XMMatrixTranspose(XMMatrixInverse(0, XMMatrixLookToLH(XMLoadFloat4(&dynaLight.dLightPos), XMLoadFloat4(&dynaLight.dLightDir), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)))));
+	XMStoreFloat4(&lightViewPoint.cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
+	XMStoreFloat4x4(&lightViewPoint.projection, XMMatrixTranspose(XMMatrixOrthographicLH(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, 0.01f, 100.0f)));
+
+	D3D11_SUBRESOURCE_DATA BufferDataShadow = { 0 };
+	BufferDataShadow.pSysMem = &lightViewPoint;
+	BufferDataShadow.SysMemPitch = 0;
+	BufferDataShadow.SysMemSlicePitch = 0;
+	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(ViewProj), D3D11_BIND_CONSTANT_BUFFER);
+	Device->CreateBuffer(&constBuffDesc, &BufferDataShadow, lightViewBuff.GetAddressOf());
+
+
+
+	
+    //create new depth render to texture pixel shader
+	std::vector<uint8_t> shadowPSData;
+	ShaderLoader::LoadShader(shadowPSData, "DepthMapPS.cso");
+	Device->CreatePixelShader(&shadowPSData[0], shadowPSData.size(), NULL, depthPS.GetAddressOf());
+
+	//create null Geometry Shader with SO enabled
+	std::vector<uint8_t> nullGSData;
+	ShaderLoader::LoadShader(nullGSData, "VSforNullGS.cso");
+
+	
+	D3D11_SO_DECLARATION_ENTRY SODecl[] =
+	{
+		{ 0, "SV_POSITION", 0, 0, 4, 0 },   
+		{ 0, "UVW", 0, 0, 4, 0 },     
+		{ 0, "NORM", 0, 0, 4, 0 },
+	};
+	Device->CreateGeometryShaderWithStreamOutput(&nullGSData[0], nullGSData.size(), SODecl, ARRAYSIZE(SODecl), NULL, 0, 0, NULL, nullSOGS.GetAddressOf());
+
+	//Clamped sampler for shadow map
+	D3D11_SAMPLER_DESC clampSamplerDesc;
+	clampSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	clampSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	clampSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	clampSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	clampSamplerDesc.MipLODBias = 0.0f;
+	clampSamplerDesc.MaxAnisotropy = 1;
+	clampSamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	clampSamplerDesc.BorderColor[0] = 1.0f;
+	clampSamplerDesc.BorderColor[1] = 1.0f;
+	clampSamplerDesc.BorderColor[2] = 1.0f;
+	clampSamplerDesc.BorderColor[3] = 1.0f;
+	clampSamplerDesc.MinLOD = -FLT_MAX;
+	clampSamplerDesc.MaxLOD = FLT_MAX;
+	Device->CreateSamplerState(&clampSamplerDesc, clampSamp.GetAddressOf());
+
+
+	//pass thru VS
+	std::vector<uint8_t> passVSData;
+	ShaderLoader::LoadShader(passVSData, "InstancedPassVS.cso");
+	Device->CreateVertexShader(&passVSData[0], passVSData.size(), NULL, passVS.GetAddressOf());
+
+	//blue ps
+	std::vector<uint8_t> passPSData;
+	ShaderLoader::LoadShader(passPSData, "Trivial_PS.cso");
+	Device->CreatePixelShader(&passPSData[0], passPSData.size(), NULL, passPS.GetAddressOf());
+	//end Prepass initializations
+
+
 
 	//instance initializations
 	if (LOADED_BEAR == 1)
@@ -1022,6 +1218,14 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//	Temp.Norm = XMFLOAT4(Norms[i*4], Norms[i*4+1], Norms[i*4+2], Norms[i*4+3]);
 	//	VertexBuffer[i] = Temp;
 	//}
+
+	//initialize stream out buffer
+	//*******************************************
+	int streamBuffSize = numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
+	D3D11_BUFFER_DESC streamBuffDesc = { streamBuffSize, D3D11_USAGE_DEFAULT, D3D11_BIND_STREAM_OUTPUT | D3D11_BIND_VERTEX_BUFFER, 0, 0, 0 };
+	Device->CreateBuffer(&streamBuffDesc, nullptr, streamedOutput.GetAddressOf());
+	//******************************************
+
 	int** BoneIndices = whatever::GetVertToBoneInds();
 	float** BoneWeights = whatever::GetVertWeightToBoneInds();
 	SkinnedVert* SkinnedVertexBuffer = new SkinnedVert[numVerts];
@@ -1536,6 +1740,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	CurrCamera = new Camera;
 	CurrCamera->init(BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT);
+	auto dContext = devResources->GetD3DDeviceContext();
+	auto targetView = devResources->GetBackBufferRenderTargetView();
+	dContext->OMSetRenderTargets(1, &targetView, devResources->GetDepthStencilView());
+	dContext->OMSetDepthStencilState(devResources->GetDepthStencilState(), 0);
+
 	timer.Restart();
 }
 
@@ -1556,12 +1765,12 @@ bool DEMO_APP::Run()
 	CurrCamera->update(delta);
 	ModelShape->Update(delta);
 
-	dContext->OMSetRenderTargets(1, &targetView, devResources->GetDepthStencilView());
 	dContext->RSSetViewports(1, &viewport);
 	FLOAT color[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	dContext->ClearRenderTargetView(targetView, color);
-	dContext->ClearDepthStencilView(devResources->GetDepthStencilView(), D3D10_CLEAR_DEPTH, 1, 1);
-	dContext->OMSetDepthStencilState(devResources->GetDepthStencilState(), 0);
+	FLOAT black[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	dContext->ClearRenderTargetView(shadowRTV.Get(), black);
+	dContext->ClearDepthStencilView(devResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1, 1);
 	if (GetAsyncKeyState('F') & 0x1)
 	{
 		wire = !wire;
@@ -1582,6 +1791,18 @@ bool DEMO_APP::Run()
 
 bool DEMO_APP::ShutDown()
 {
+	theEmptyMap.Reset();
+	emptySRV.Reset();
+	passPS.Reset();
+	passVS.Reset();
+	clampSamp.Reset();
+	nullSOGS.Reset();
+	lightViewBuff.Reset();
+	depthPS.Reset();
+	streamedOutput.Reset();
+	theShadowMap.Reset();
+	shadowRTV.Reset();
+	shadowSRV.Reset();
 	rasterState.Reset();
 	rasterWireState.Reset();
 	InstanceBuff.Reset();
@@ -1595,9 +1816,6 @@ bool DEMO_APP::ShutDown()
 	delete ModelMesh;
 	delete SphereMeshthing;
 	delete SphereShapething;
-	rasterState.Reset();
-	rasterWireState.Reset();
-	InstanceBuff.Reset();
 	devResources->cleanup();
 	UnregisterClass( L"DirectXApplication", application );
 	return true;

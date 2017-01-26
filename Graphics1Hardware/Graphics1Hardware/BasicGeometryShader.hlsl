@@ -90,7 +90,16 @@ struct GSOutput
 	float4 norm : NORM;
 	float4 surfacePos : SURPOS;
 	float4 cameraPos : CAMPOS;
+	float4 depthPosition: TEXTURE0;
+	float4 lightViewPosition : TEXCOORD1;
 };
+
+cbuffer LightViewBuffer : register(b7)
+{
+	matrix LView;
+	matrix LProjection;
+	float4 LCameraPosition;
+}
 
 //from Vertex Shader
 struct GSInput
@@ -119,7 +128,9 @@ void main(
 	//loop once for each vert of triangle
 	for (uint i = 0; i < 3; i++)
 	{
-		GSOutput element = input[i];
+		GSOutput element;
+		element.uvw = input[i].uvw;
+
 		float4 pos = input[i].pos;
 		pos.w = 1.0f;
 		pos = mul(pos, transforms[index]);
@@ -128,7 +139,13 @@ void main(
 		pos = mul(pos, view);
 		pos = mul(pos, projection);
 		element.pos = pos;
-		
+		element.depthPosition = pos;
+
+		float4 Lpos = element.surfacePos;
+		Lpos = mul(Lpos, LView);
+		Lpos = mul(Lpos, LProjection);
+		element.lightViewPosition = Lpos;
+
 		pos = input[i].norm;
 		pos.w = 1.0f;
 		pos = mul(pos, worldMatrix);

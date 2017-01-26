@@ -32,8 +32,10 @@ struct PixelShaderInput
 	float4 pos : SV_POSITION;
 	float4 uvw : UVW;
 	float4 norm : NORM;
-	float4 surfacePos : SURPOS;
-	float4 cameraPos : CAMPOS;
+	//float4 surfacePos : SURPOS;
+	//float4 cameraPos : CAMPOS;
+	//float4 depthPosition : TEXTURE0;
+	//float4 lightViewPosition : TEXCOORD1;
 };
 
 PixelShaderInput main(VertexShaderInput input)
@@ -80,7 +82,7 @@ PixelShaderInput main(VertexShaderInput input)
 
 	output.pos = skinnedPos;
 	output.norm = input.norm;
-	output.surfacePos = output.cameraPos = input.pos;
+	//output.surfacePos = output.cameraPos = input.pos;
 	output.uvw = input.uvw;
 
 	return output;

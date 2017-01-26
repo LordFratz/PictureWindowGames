@@ -24,6 +24,8 @@ struct PixelShaderInput
 	float4 norm : NORM;
 	float4 surfacePos : SURPOS;
 	float4 cameraPos : CAMPOS;
+	float4 depthPos : TEXTURE0;
+	float4 lightViewPosition : TEXCOORD1;
 };
 
 PixelShaderInput main(VertexShaderInput input)
@@ -35,6 +37,7 @@ PixelShaderInput main(VertexShaderInput input)
 	pos = mul(pos, view);
 	pos = mul(pos, projection);
 	output.pos = pos;
+	output.depthPos = pos;
 
 	pos = input.norm;
 	pos.w = 1.0f;
