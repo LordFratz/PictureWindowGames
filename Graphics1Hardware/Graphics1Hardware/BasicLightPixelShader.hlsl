@@ -22,7 +22,7 @@ struct PixelShaderInput
 	float4 surfacePos : SURPOS;
 	float4 cameraPos : CAMPOS;
 	float4 depthPosition : TEXTURE0;
-	float4 lightViewPosition : TEXCOORD1;
+	float4 lightViewPosition : TEXTURE1;
 };
 
 float4 main(PixelShaderInput input) : SV_TARGET
