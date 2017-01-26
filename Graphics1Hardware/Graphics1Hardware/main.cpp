@@ -1447,7 +1447,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #if LOADED_BEAR == 2
 	thing = ShaderLoader::LoadShader(VSData2, "ToMultitextuedPixelShader.cso"); //actually is a vertex shader, just weirdly named
 	thing = ShaderLoader::LoadShader(PSData2, "MultiTexturedLitPixelShader.cso");
-	thing = ShaderLoader::LoadShader(GSData, "BasicGeometryShader.cso");
+	thing = ShaderLoader::LoadShader(GSData, "TangentGeometryShader.cso");
 	Device->CreateVertexShader(&VSData2[0], VSData2.size(), NULL, ModelContext->m_vertexShader.GetAddressOf());
 	Device->CreatePixelShader(&PSData2[0], PSData2.size(), NULL, ModelContext->m_pixelShader.GetAddressOf());
 	Device->CreateGeometryShader(&GSData[0], GSData.size(), NULL, ModelContext->m_geometryShader.GetAddressOf());

@@ -32,9 +32,11 @@ struct PixelShaderInput
 {
 	float4 pos : SV_POSITION;
 	float4 uvw : UVW;
+	float4 norm : NORM;
 	float4 surfacePos : SURPOS;
 	float4 cameraPos : CAMPOS;
 	float4 tan : TAN;
+	matrix tbn : TBN;
 };
 
 PixelShaderInput main(VertexShaderInput input)
@@ -82,6 +84,8 @@ PixelShaderInput main(VertexShaderInput input)
 	output.pos = skinnedPos;
 	output.surfacePos = output.cameraPos = input.pos;
 	output.uvw = input.uvw;
+
+	output.norm = input.norm;
 
 	//float4 T = normalize(mul(worldMatrix, input.tangent));
 	//float4 B = normalize(mul(worldMatrix, float4(cross(float3(input.tangent.x, input.tangent.y, input.tangent.z), float3(input.norm.x, input.norm.y, input.norm.z)), 0)));
