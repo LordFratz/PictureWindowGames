@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 2
+#define LOADED_BEAR 0
 
 struct ViewProj
 {
@@ -520,12 +520,12 @@ namespace
 
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(2.0f, 2.0f, 2.0f) *skeleton->Bones[i].getLocal() * SingleInstanceWorld);
 				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.1f, 0.1f, 0.1f) * skeleton->Bones[i].getLocal() * SingleInstanceWorld);
 				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
@@ -561,12 +561,12 @@ namespace
 			//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(2.0f, 2.0f, 2.0f) *skeleton->Bones[i].getLocal() * SingleInstanceWorld);
 				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 			else {
 				Whatchamacallit.push_back(XMFLOAT4X4());
-				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.3f, 0.3f, 0.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
+				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(0.1f, 0.1f, 0.1f) * skeleton->Bones[i].getLocal() * SingleInstanceWorld);
 				//Whatchamacallit[i]._42 = -Whatchamacallit[i]._42;
 			}
 		}
@@ -906,7 +906,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end Sphere initializations :: VertexBuffer/IndexBuffer
 
 	//Light initializations
-	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(0.7f, 0.7f, 0.7f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
 
@@ -952,9 +952,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	auto SampleState = new Microsoft::WRL::ComPtr<ID3D11SamplerState>();
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
 	samplerDesc.MipLODBias = 0.0f;
 	samplerDesc.MaxAnisotropy = 1;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;

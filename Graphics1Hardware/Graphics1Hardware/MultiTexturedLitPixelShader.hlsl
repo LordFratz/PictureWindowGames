@@ -31,7 +31,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	float specuLum = (.299 * SpecuPow.x + .587 * SpecuPow.y + .114 * SpecuPow.z);
 	float4 normmap = NormalTexture.Sample(filter, input.uvw.xy);
 	normmap = normalize(mul(normmap, 2.0f) - 1.0f);
-	normmap = normalize(mul(input.tbn, normmap));
+	normmap = normalize(mul(normmap, input.tbn));
 	float3 viewDir = normalize(input.cameraPos.xyz - input.surfacePos.xyz);
 	float specPower = 128.0f;
 	float4 whiteLight = float4(1.0f, 1.0f, 1.0f, 1.0f);

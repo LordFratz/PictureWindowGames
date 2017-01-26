@@ -66,6 +66,7 @@ void DeviceResources::initialize(int sWidth, int sHeight, HWND window)
 	ZeroMemory(&m_screenViewport, sizeof(D3D11_VIEWPORT));
 	m_screenViewport.TopLeftX = 0;
 	m_screenViewport.TopLeftY = 0;
+	m_screenViewport.MaxDepth = 1.0f;
 	m_screenViewport.Width =  (FLOAT)sWidth;
 	m_screenViewport.Height = (FLOAT)sHeight;
 
