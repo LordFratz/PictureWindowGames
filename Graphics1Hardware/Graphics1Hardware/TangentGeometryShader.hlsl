@@ -141,14 +141,18 @@ void main(
 		pos.y = cameraPosition.y;
 		pos.z = cameraPosition.z;
 		element.cameraPos = pos;
+
 		float Det = 1;
 		if (input[i].pos.x < 0) {
 			Det = -1;
 		}
-		float4 T = normalize(mul(worldMatrix, input[i].tan));
-		float4 B = normalize(mul(worldMatrix, float4(cross(float3(element.norm.x, element.norm.y, element.norm.z), float3(input[i].tan.x, input[i].tan.y, input[i].tan.z)), 0)));
-		float4 N = normalize(mul(worldMatrix, element.norm)) * Det;
+
+		float4 T = normalize(mul(input[i].tan, worldMatrix));
+		float4 N = normalize(mul(element.norm, worldMatrix));
+		//T = normalize(T - dot(T, N) * N);
+		float4 B = float4(cross(float3(N.x, N.y, N.z), float3(T.x, T.y, T.z)), 0) * Det;
 		float4 BottomRow = float4(0, 0, 0, 1);
+
 		element.tbn = matrix(T, B, N, BottomRow);
 
 		output.Append(element);
