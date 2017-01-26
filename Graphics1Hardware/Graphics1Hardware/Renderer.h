@@ -355,7 +355,7 @@ struct Skeleton
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getWorld());
+			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getLocal());
 		}
 		return offsets;
 	}

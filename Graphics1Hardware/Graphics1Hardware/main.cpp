@@ -501,7 +501,7 @@ namespace
 		{
 			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
-			
+
 			if (LOADED_BEAR == 1) {
 				Whatchamacallit.push_back(XMFLOAT4X4());
 				XMStoreFloat4x4(&Whatchamacallit[i], XMMatrixScaling(200.3f, 200.3f, 200.3f) * SingleInstanceWorld * skeleton->Bones[i].getLocal());
@@ -537,7 +537,7 @@ namespace
 		bufferData->worldMatrix = Node.WorldMat;
 		for (int i = 0; i < Blender->Animations[0].bones.size(); i++)
 		{
-			bufferData->boneOffsets[i + 1] = data[i];
+			bufferData->boneOffsets[i] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
 			//Whatchamacallit.push_back(XMFLOAT4X4());
 			//XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
