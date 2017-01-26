@@ -267,7 +267,11 @@ namespace
 		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 
 		auto vertexBuffer = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->Mesh.MeshData[1];
+#if LOADED_BEAR == 2
+		UINT stride = sizeof(TangentSkinnedVert);
+#else
 		UINT stride = sizeof(SkinnedVert);
+#endif
 		UINT offset = 0;
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -901,7 +905,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end Sphere initializations :: VertexBuffer/IndexBuffer
 
 	//Light initializations
-	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
 

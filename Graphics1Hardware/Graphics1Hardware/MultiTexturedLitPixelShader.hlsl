@@ -30,6 +30,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	float4 SpecuPow = SpecTexture.Sample(filter, input.uvw.xy);
 	float specuLum = (.299 * SpecuPow.x + .587 * SpecuPow.y + .114 * SpecuPow.z);
 	float4 normmap = NormalTexture.Sample(filter, input.uvw.xy);
+	normmap = normalize(mul(normmap, 2.0f) - 1.0f);
+	normmap = normalize(mul(input.tbn, normmap));
 	float3 viewDir = normalize(input.cameraPos.xyz - input.surfacePos.xyz);
 	float specPower = 128.0f;
 	float4 whiteLight = float4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -37,8 +39,9 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	float lightRatio = saturate(dot(-normalize(dLightDir.xyz), normalize(normmap.xyz)));
 	lightResult += (lightRatio * dLightColor);
 	float3 halfVec = normalize(-normalize(dLightDir.xyz) + viewDir);
-	float specIntensity = max(saturate(pow(saturate(dot(normmap.xyz, halfVec)), specPower)), 0);
-	lightResult += (specIntensity * specuLum * whiteLight);
+	float specIntensity = max(saturate(pow(saturate(dot(normmap.xyz, halfVec)), specuLum)), 0);
+	lightResult += (specIntensity * whiteLight);
+	lightResult += float4(.2f, .2f, .2f, .2f);
 	//return baseColor;
 	return saturate(lightResult * baseColor);
 }
