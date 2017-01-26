@@ -208,6 +208,7 @@ struct BlenderDataStorage
 	bool IsBlending;
 	bool IsAnimating;
 	int FromAnimNum = 0, ToAnimNum = -1;
+	float transitionLength;
 
 	currFrame Update(float delta)
 	{
@@ -245,7 +246,7 @@ struct BlenderDataStorage
 		{
 			ToAnimNum = 4;
 			IsBlending = true;
-			To.animation = &Animations[5];
+			To.animation = &Animations[4];
 		}
 
 		if(IsBlending)
@@ -253,9 +254,9 @@ struct BlenderDataStorage
 			TranstionTimer += delta;
 			To.Update(delta);
 			float ratio = TranstionTimer / 5.0f;
-			rv = Blend(From.CurrFrame, To.CurrFrame, ratio);
-			if(TranstionTimer >= 5.0f)
+			if (TranstionTimer >= 5.0f)
 			{
+				rv = Blend(From.CurrFrame, To.CurrFrame, 1.0f);
 				TranstionTimer = 0.0f;
 				IsBlending = false;
 				From.perBoneData = To.perBoneData;
@@ -264,6 +265,8 @@ struct BlenderDataStorage
 				FromAnimNum = ToAnimNum;
 				ToAnimNum = -1;
 			}
+			else
+			rv = Blend(From.CurrFrame, To.CurrFrame, ratio);
 		}
 
 		return rv;
@@ -346,8 +349,7 @@ struct Skeleton
 
 	XMFLOAT4X4* getBoneOffsets(currFrame frame, XMMATRIX world)
 	{
-		XMFLOAT4X4* offsets = new XMFLOAT4X4[frame.thisFrame.size() + 1]();
-		XMStoreFloat4x4(&offsets[0], XMMatrixIdentity());
+		XMFLOAT4X4* offsets = new XMFLOAT4X4[frame.thisFrame.size()]();
 		for(int i = 0; i < frame.thisFrame.size(); i++)
 		{
 			XMMATRIX val = frame.thisFrame[i].getMat();
@@ -355,7 +357,7 @@ struct Skeleton
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getWorld());
+			XMStoreFloat4x4(&offsets[i], XMMatrixTranspose(InverseBindMats[i] * Bones[i].getLocal()));
 		}
 		return offsets;
 	}

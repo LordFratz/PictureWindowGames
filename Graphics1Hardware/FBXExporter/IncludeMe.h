@@ -27,5 +27,6 @@ extern "C" {
 		EXPORT int GetKeyFrameAmount(int AnimIndex);
 		EXPORT float** GetBoneAnimationKeyFrames();
 		EXPORT float** GetAnimationKeyframeTweens();
+		EXPORT float* GetTangents();
 	}
 };

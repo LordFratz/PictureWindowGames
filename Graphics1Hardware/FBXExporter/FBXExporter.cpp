@@ -91,6 +91,8 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 		FbxGeometryElementUV* Euvs = Mesh->GetElementUV();
 		FbxLayerElementArrayTemplate<FbxVector2>* tempUVs = 0;
 		FbxArray<FbxVector4> tempNorms;
+		FbxLayerElementArrayTemplate<FbxVector4>* tempTangents = 0;
+		Mesh->GetTangents(&tempTangents);
 		Mesh->GetPolygonVertexNormals(tempNorms);
 		Mesh->GetTextureUV(&tempUVs, FbxLayerElement::eTextureDiffuse);
 		int spot = 0;
@@ -106,9 +108,21 @@ void FBXExporter::FBXExport::ExportFBX(FbxNode* NodeThing)
 					Vertex vert;
 					Vertex newNormal;
 					Vertex newUV;
+					Vertex newTang;
 
 					int UVIndex = Mesh->GetTextureUVIndex(e, j);
 					FbxVector2 crud = tempUVs->GetAt(UVIndex);
+
+					if (tempTangents != NULL) {
+						FbxVector4 turd = tempTangents->GetAt(CPIndex);
+
+						newTang.pos[0] = (float)turd.mData[0];
+						newTang.pos[1] = (float)turd.mData[1];
+						newTang.pos[2] = (float)turd.mData[2];
+						newTang.pos[3] = (float)turd.mData[3];
+
+						tangents.push_back(newTang);
+					}
 
 					vert.pos[0] = (float)tempverts[CPIndex].mData[0];
 					vert.pos[1] = (float)tempverts[CPIndex].mData[1];
@@ -220,6 +234,7 @@ void FBXExporter::FBXExport::ClearInfo()
 	Verts.clear();
 	Normals.clear();
 	UVs.clear();
+	tangents.clear();
 	Indecies.clear();
 	CompInds.clear();
 	Skeleton.clear();
@@ -382,8 +397,15 @@ void FBXExporter::FBXExport::ExportToBin(FileInfo::ExporterHeader* Header, const
 		//Export CompInds
 		file.write((char *)&CompInds[0], CompInds.size() * sizeof(int));
 
+		//Export Tangents
+		int tempSize = (int)tangents.size();
+		file.write((char*)&tempSize, sizeof(int));
+		if (tangents.size() > 0) {
+			file.write((char *)&tangents[0], tangents.size() * sizeof(Vertex));
+		}
+
 		//Export Verts Inds and Weights for each Bones
-		int tempSize = (int)BoneVertInds.size();
+		tempSize = (int)BoneVertInds.size();
 		file.write((char*)&tempSize, sizeof(int));
 		for (int i = 0; i < BoneVertInds.size(); i++) {
 			tempSize = (int)BoneVertInds[i].size();
@@ -476,8 +498,16 @@ void FBXExporter::FBXExport::ReadInBin(FileInfo::ExporterHeader* Header, FILE* f
 			Indecies.push_back(i);
 		}
 
-		//Load Bone Verts and Bone weights for bones / unload unessecary Datas
+		//Load tangents
 		int tempSize;
+		fread(&tempSize, sizeof(int), 1, file);
+		tangents.clear();
+		tangents.resize(tempSize);
+		if (tempSize > 0) {
+			fread(&tangents[0], tangents.size() * sizeof(Vertex), 1, file);
+		}
+
+		//Load Bone Verts and Bone weights for bones / unload unessecary Datas
 		fread(&tempSize, sizeof(int), 1, file);
 		BoneVertInds.clear();
 		BoneVertInds.resize(tempSize);
