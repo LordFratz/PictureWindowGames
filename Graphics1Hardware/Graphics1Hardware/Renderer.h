@@ -346,8 +346,7 @@ struct Skeleton
 
 	XMFLOAT4X4* getBoneOffsets(currFrame frame, XMMATRIX world)
 	{
-		XMFLOAT4X4* offsets = new XMFLOAT4X4[frame.thisFrame.size() + 1]();
-		XMStoreFloat4x4(&offsets[0], XMMatrixIdentity());
+		XMFLOAT4X4* offsets = new XMFLOAT4X4[frame.thisFrame.size()]();
 		for(int i = 0; i < frame.thisFrame.size(); i++)
 		{
 			XMMATRIX val = frame.thisFrame[i].getMat();
@@ -355,7 +354,7 @@ struct Skeleton
 		}
 		for (int i = 0; i < frame.thisFrame.size(); i++)
 		{
-			XMStoreFloat4x4(&offsets[i + 1], InverseBindMats[i] * Bones[i].getLocal());
+			XMStoreFloat4x4(&offsets[i], XMMatrixTranspose(InverseBindMats[i] * Bones[i].getLocal()));
 		}
 		return offsets;
 	}

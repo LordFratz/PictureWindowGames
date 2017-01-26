@@ -13,3 +13,8 @@ To render bear instead of box:
 
 To switch between fill and wireframe:
 	Use the 'F' key
+	
+To switch between Animations
+	1, 2, 3, 4
+	NOTE: Once it's blending between animations it will not 
+	accept another call to change animations until it is finished

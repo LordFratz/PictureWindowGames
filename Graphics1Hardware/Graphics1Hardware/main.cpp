@@ -551,9 +551,10 @@ namespace
 		auto CurrFrame = Blender->Update(delta);
 		auto data = skeleton->getBoneOffsets(CurrFrame, XMLoadFloat4x4(&Node.WorldMat));
 		bufferData->worldMatrix = Node.WorldMat;
+		XMStoreFloat4x4(&bufferData->boneOffsets[0], XMMatrixIdentity());
 		for (int i = 0; i < Blender->Animations[0].bones.size(); i++)
 		{
-			bufferData->boneOffsets[i] = data[i];
+			bufferData->boneOffsets[i+1] = data[i];
 			//XMMATRIX temp = XMLoadFloat4x4(&data[i]);
 			//Whatchamacallit.push_back(XMFLOAT4X4());
 			//XMStoreFloat4x4(&Whatchamacallit[i], SingleInstanceWorld * skeleton->Bones[i].getLocal());
@@ -581,8 +582,8 @@ namespace
 		//animations
 		delete toClean[3];
 		delete toClean[4];
-		//delete toClean[5];
-		//delete toClean[6];
+		delete toClean[5];
+		delete toClean[6];
 	}
 
 	void SphereShape(RenderNode& RNode) {
