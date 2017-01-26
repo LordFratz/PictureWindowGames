@@ -1045,11 +1045,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 #endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
-#if LOADED_BEAR != 0
-	//ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperSkinnedUpdate, ProperSkinnedUpdate);
-#else
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
-#endif
 
 	ModelMesh->m_indexCount = numIndices;
 
