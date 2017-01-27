@@ -1,6 +1,6 @@
 Folder Name: Graphics1Hardware
 Solution: Graphics1Hardware.sln
-FBX SDK Version: fbx 2016 1.1 vs2015 win
+FBX SDK Version: fbx 2016 1.1 vs2015 win 
 Visual Studio Version: 2015
 Platform: X64
 Controls
