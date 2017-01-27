@@ -32,7 +32,7 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 2
 
 
 //You shouldn't need to touch this at all to do testing
@@ -492,6 +492,7 @@ namespace
 
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
 		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		context->PSSetSamplers(1, 1, clampSamp.GetAddressOf());
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
 
@@ -1011,8 +1012,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end Sphere initializations :: VertexBuffer/IndexBuffer
 
 	//Light initializations
-	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(0.7f, 0.7f, 0.7f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
-	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
+	//XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(0.7f, 0.7f, 0.7f, 1.0f));//XMVectorSet(1.0f, 0.98f, 0.804f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightColor, XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f));
+	//XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f));
+	XMStoreFloat4(&dynaLight.dLightDir, XMVectorSet(-1.0f, -1.0f, -1.0f, 1.0f));
 	XMStoreFloat4(&dynaLight.dLightPos, XMVectorSet(0.0f, 10.0f, 0.0f, 1.0f));
 
 	D3D11_SUBRESOURCE_DATA BufferData2 = { 0 };
