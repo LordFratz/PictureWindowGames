@@ -37,7 +37,7 @@ using namespace DirectX;
 
 //You shouldn't need to touch this at all to do testing
 //define 0 for no shadows, 1 for shadows
-#define SHADOWS 1
+#define SHADOWS 0
 
 struct ViewProj
 {
@@ -264,7 +264,7 @@ namespace
 	{
 		auto Node = &(RenderContext&)rNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
-		
+
 		context->IASetInputLayout(Node->m_inputLayout.Get());
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
@@ -273,7 +273,7 @@ namespace
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
-		
+
 
 
 
@@ -284,7 +284,7 @@ namespace
 
 
 		//yet to be used
-		
+
 	}
 
 	void SkinnedGeoInstancedShadowShape(RenderNode &rNode)
@@ -305,7 +305,7 @@ namespace
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 
 		//Pass 0 complete
-		
+
 		context->VSSetShader(passVS.Get(), nullptr, 0);
 		context->GSSetShader(Node->Context.m_geometryShader.Get(), nullptr, 0);
 		context->PSSetShader(depthPS.Get(), nullptr, 0);
@@ -318,7 +318,7 @@ namespace
 		context->GSSetConstantBuffers(0, 1, ShapeSubresource1->GetAddressOf());
 		context->GSSetConstantBuffers(7, 1, lightViewBuff.GetAddressOf());
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
-		
+
 
 		 //Pass 1 complete
 

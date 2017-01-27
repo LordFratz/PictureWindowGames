@@ -203,10 +203,12 @@ struct BlenderDataStorage
 {
 	Interpolator From;
 	Interpolator To;
+	currFrame TempFrame;
 	std::vector<Animation> Animations;
 	float TranstionTimer;
 	bool IsBlending;
 	bool IsAnimating;
+	bool FinalInterpolation;
 	int FromAnimNum = 0, ToAnimNum = -1;
 	float transitionLength;
 
@@ -218,31 +220,31 @@ struct BlenderDataStorage
 
 		//Do Input Logic
 		int numAnims = (int)Animations.size();
-		if(GetAsyncKeyState(0x31) && numAnims > 0 && FromAnimNum != 0 && ToAnimNum != 0) //1
+		if(GetAsyncKeyState(0x31) && numAnims > 0 && FromAnimNum != 0 && ToAnimNum != 0 && !IsBlending) //1
 		{
 			ToAnimNum = 0;
 			IsBlending = true;
 			To.animation = &Animations[0];
 		}
-		else if(GetAsyncKeyState(0x32) && numAnims > 1 && FromAnimNum != 1 && ToAnimNum != 1) //2
+		else if(GetAsyncKeyState(0x32) && numAnims > 1 && FromAnimNum != 1 && ToAnimNum != 1 && !IsBlending) //2
 		{
 			ToAnimNum = 1;
 			IsBlending = true;
 			To.animation = &Animations[1];
 		}
-		else if(GetAsyncKeyState(0x33) && numAnims > 2 && FromAnimNum != 2 && ToAnimNum != 2) //3
+		else if(GetAsyncKeyState(0x33) && numAnims > 2 && FromAnimNum != 2 && ToAnimNum != 2 && !IsBlending) //3
 		{
 			ToAnimNum = 2;
 			IsBlending = true;
 			To.animation = &Animations[2];
 		}
-		else if(GetAsyncKeyState(0x34) && numAnims > 3 && FromAnimNum != 3 && ToAnimNum != 3) //4
+		else if(GetAsyncKeyState(0x34) && numAnims > 3 && FromAnimNum != 3 && ToAnimNum != 3 && !IsBlending) //4
 		{
 			ToAnimNum = 3;
 			IsBlending = true;
 			To.animation = &Animations[3];
 		}
-		else if (GetAsyncKeyState(0x35) && numAnims > 4 && FromAnimNum != 4 && ToAnimNum != 4) //5
+		else if (GetAsyncKeyState(0x35) && numAnims > 4 && FromAnimNum != 4 && ToAnimNum != 4 && !IsBlending) //5
 		{
 			ToAnimNum = 4;
 			IsBlending = true;
@@ -252,21 +254,36 @@ struct BlenderDataStorage
 		if(IsBlending)
 		{
 			TranstionTimer += delta;
-			To.Update(delta);
-			float ratio = TranstionTimer / 5.0f;
-			if (TranstionTimer >= 5.0f)
+			if(FinalInterpolation)
 			{
-				rv = Blend(From.CurrFrame, To.CurrFrame, 1.0f);
-				TranstionTimer = 0.0f;
-				IsBlending = false;
-				From.perBoneData = To.perBoneData;
-				From.animation = To.animation;
-				To = Interpolator();
-				FromAnimNum = ToAnimNum;
-				ToAnimNum = -1;
+				float ratio = TranstionTimer / 1.0f;
+				if(TranstionTimer >= 1.0f)
+				{
+					IsBlending = false;
+					FinalInterpolation = false;
+				}
+				else rv = Blend(TempFrame, From.CurrFrame, ratio);
 			}
 			else
-			rv = Blend(From.CurrFrame, To.CurrFrame, ratio);
+			{
+				float ratio = TranstionTimer / 5.0f;
+				To.Update(delta);
+				if (TranstionTimer >= 5.0f)
+				{
+					rv = Blend(From.CurrFrame, To.CurrFrame, 1.0f);
+					if(From.perBoneData[0].prevFrame == 0)
+					{
+						TranstionTimer = 0.0f;
+						From.perBoneData = To.perBoneData;
+						From.animation = To.animation;
+						To = Interpolator();
+						FromAnimNum = ToAnimNum;
+						IsBlending = false;
+						ToAnimNum = -1;
+					}
+				}
+				else rv = Blend(From.CurrFrame, To.CurrFrame, ratio);
+			}
 		}
 
 		return rv;
