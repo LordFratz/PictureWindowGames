@@ -86,12 +86,7 @@ PixelShaderInput main(VertexShaderInput input)
 	output.uvw = input.uvw;
 
 	output.norm = input.norm;
-
-	//float4 T = normalize(mul(worldMatrix, input.tangent));
-	//float4 B = normalize(mul(worldMatrix, float4(cross(float3(input.tangent.x, input.tangent.y, input.tangent.z), float3(input.norm.x, input.norm.y, input.norm.z)), 0)));
-	//float4 N = normalize(mul(worldMatrix, input.norm));
-	//float4 BottomRow = float4(0,0,0,1);
-	//output.tbn = matrix(T,B,N,BottomRow);
 	output.tan = input.tangent;
+
 	return output;
 }

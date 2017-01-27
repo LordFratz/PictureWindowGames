@@ -38,6 +38,7 @@ PixelShaderInput main(VertexShaderInput input)
 	pos = mul(pos, projection);
 	output.pos = pos;
 	output.depthPos = pos;
+	output.lightViewPosition = pos;
 
 	pos = input.norm;
 	pos.w = 1.0f;

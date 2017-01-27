@@ -62,8 +62,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		float specIntensity = max(saturate(pow(saturate(dot(input.norm.xyz, halfVec)), specPower)), 0);
 		lightResult += (specIntensity * constantSpecIntensity * whiteLight);
 	}
+	lightResult += float4(.1f, .1f, .1f, .1f);
 	
-	
-	//return baseColor;
+		//return baseColor;
 	return saturate(lightResult * baseColor);
 }

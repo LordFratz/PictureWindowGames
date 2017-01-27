@@ -32,12 +32,12 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 0
+#define LOADED_BEAR 2
 
 
 //You shouldn't need to touch this at all to do testing
 //define 0 for no shadows, 1 for shadows
-#define SHADOWS 1
+#define SHADOWS 0
 
 struct ViewProj
 {
@@ -267,7 +267,7 @@ namespace
 	{
 		auto Node = &(RenderContext&)rNode;
 		auto context = Node->m_deviceResources->GetD3DDeviceContext();
-		
+
 		context->IASetInputLayout(Node->m_inputLayout.Get());
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->VSSetShader(Node->m_vertexShader.Get(), nullptr, 0);
@@ -276,7 +276,7 @@ namespace
 		auto ContextSubresource1 = (Microsoft::WRL::ComPtr<ID3D11Buffer>*)Node->ContextData[0];
 		context->UpdateSubresource(ContextSubresource1->Get(), 0, NULL, &CurrCamera->cameraData, 0, 0);
 		context->VSSetConstantBuffers(1, 1, ContextSubresource1->GetAddressOf());
-		
+
 
 
 
@@ -287,7 +287,7 @@ namespace
 
 
 		//yet to be used
-		
+
 	}
 
 	void SkinnedGeoInstancedShadowShape(RenderNode &rNode)
@@ -315,7 +315,7 @@ namespace
 		context->ClearDepthStencilView(Node->m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1, 1);
 
 		//Pass 0 complete
-		
+
 		context->IASetInputLayout(nextLayout);
 		context->VSSetShader(passVS.Get(), nullptr, 0);
 		context->GSSetShader(Node->Context.m_geometryShader.Get(), nullptr, 0);
@@ -330,6 +330,7 @@ namespace
 		context->GSSetConstantBuffers(7, 1, lightViewBuff.GetAddressOf());
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 		context->ClearDepthStencilView(Node->m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1, 1);
+
 
 		 //Pass 1 complete
 
@@ -504,6 +505,7 @@ namespace
 
 		auto Sampler = (Microsoft::WRL::ComPtr<ID3D11SamplerState>*)Node->Mesh.MeshData[2];
 		context->PSSetSamplers(0, 1, Sampler->GetAddressOf());
+		context->PSSetSamplers(1, 1, clampSamp.GetAddressOf());
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
 
