@@ -74,8 +74,13 @@ void main(
 		float4 T = normalize(mul(worldMatrix, input[i].tan));
 		float4 N = normalize(mul(worldMatrix, element.norm));
 		//T = normalize(T - dot(T, N) * N);
-		float4 B = float4(cross(N, T), 0) * Det;
+		float4 B = float4(cross(float3(N.x, N.y, N.z), float3(T.x, T.y, T.z)), 0);
 		float4 BottomRow = float4(0, 0, 0, 1);
+
+		if (dot(float4(cross(float3(N.x, N.y, N.z), float3(T.x, T.y, T.z)), 0), B) < 0.0) {
+			T = T * -1.0;
+		}
+
 		element.tbn = matrix(T, B, N, BottomRow);
 
 		output.Append(element);
