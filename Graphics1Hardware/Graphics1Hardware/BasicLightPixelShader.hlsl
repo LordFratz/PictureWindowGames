@@ -43,7 +43,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		float depthValue = depthMapTexture.Sample(clampFilter, projectTexCoord).r;
 		float lightDepthValue = input.lightViewPosition.z / input.lightViewPosition.w;
 
-		lightDepthValue = lightDepthValue - 0.001;
+		lightDepthValue = lightDepthValue - 0.001f;
 
 		if (lightDepthValue < depthValue)
 		{

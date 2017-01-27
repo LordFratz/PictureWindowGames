@@ -297,8 +297,12 @@ namespace
 		UINT offset = 0;
 		context->IASetVertexBuffers(0, 1, vertexBuffer->GetAddressOf(), &stride, &offset);
 		context->IASetIndexBuffer(Node->Mesh.m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+		context->SOSetTargets(1, streamedOutput.GetAddressOf(), &offset);
 		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
-
+		ID3D11Buffer* noVB[] = { NULL };
+		UINT noOffset[] = { 0 };
+		UINT noStride[] = { 0 };
+		context->SOSetTargets(1, noVB, noOffset);
 		//Pass 0 complete
 		
 		context->VSSetShader(passVS.Get(), nullptr, 0);
@@ -334,8 +338,10 @@ namespace
 		auto Texture = (Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3];
 		context->PSSetShaderResources(0, 1, Texture->GetAddressOf());
 #endif
-		context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
+		context->DrawAuto();
+		//context->DrawIndexed(Node->Mesh.m_indexCount, 0, 0);
 		context->PSSetShaderResources(5, 1, emptySRV.GetAddressOf());
+		context->IASetVertexBuffers(0, 1, noVB, noStride, noOffset);
 	}
 
 	void ModelGeoInstancedContext(RenderNode& rNode)
@@ -1226,7 +1232,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	//initialize stream out buffer
 	//*******************************************
-	int streamBuffSize = 1000000; //numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
+	int streamBuffSize = numVerts * sizeof(VertexPositionUVWNorm); // needs to be moved to later after load and exactly numVerts * sizeof(VertexPositionUVWNorm)
 	D3D11_BUFFER_DESC streamBuffDesc = { streamBuffSize, D3D11_USAGE_DEFAULT, D3D11_BIND_STREAM_OUTPUT | D3D11_BIND_VERTEX_BUFFER, 0, 0, 0 };
 	Device->CreateBuffer(&streamBuffDesc, nullptr, streamedOutput.GetAddressOf());
 	//******************************************
