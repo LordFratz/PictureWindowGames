@@ -34,6 +34,11 @@ using namespace DirectX;
 //define 1 for bear, 0 for box, 2 for Mage
 #define LOADED_BEAR 0
 
+
+//You shouldn't need to touch this at all to do testing
+//define 0 for no shadows, 1 for shadows
+#define SHADOWS 1
+
 struct ViewProj
 {
 	XMFLOAT4X4 view;
@@ -327,7 +332,7 @@ namespace
 		context->PSSetShaderResources(5, 1, shadowSRV.GetAddressOf());
 
 
-#if LOADED_BEAR == 2
+#if LOADED_BEAR == 2 && SHADOWS == 0
 		ID3D11ShaderResourceView* ShaderTextures[2] = { ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[3])->Get() , ((Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>*)Node->Mesh.MeshData[4])->Get() };
 		context->PSSetShaderResources(0, 2, ShaderTextures);
 #else
@@ -871,24 +876,24 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	appWndProc = proc;
 
 	WNDCLASSEX  wndClass;
-    ZeroMemory( &wndClass, sizeof( wndClass ) );
-    wndClass.cbSize         = sizeof( WNDCLASSEX );
-    wndClass.lpfnWndProc    = appWndProc;
-    wndClass.lpszClassName  = L"DirectXApplication";
-	wndClass.hInstance      = application;
-    wndClass.hCursor        = LoadCursor( NULL, IDC_ARROW );
-    wndClass.hbrBackground  = ( HBRUSH )( COLOR_WINDOWFRAME );
+	ZeroMemory(&wndClass, sizeof(wndClass));
+	wndClass.cbSize = sizeof(WNDCLASSEX);
+	wndClass.lpfnWndProc = appWndProc;
+	wndClass.lpszClassName = L"DirectXApplication";
+	wndClass.hInstance = application;
+	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndClass.hbrBackground = (HBRUSH)(COLOR_WINDOWFRAME);
 	//wndClass.hIcon			= LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_FSICON));
-    RegisterClassEx( &wndClass );
+	RegisterClassEx(&wndClass);
 
 	RECT window_size = { 0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT };
 	AdjustWindowRect(&window_size, WS_OVERLAPPEDWINDOW, false);
 
-	window = CreateWindow(	L"DirectXApplication", L"CGS Hardware Project",	WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME|WS_MAXIMIZEBOX),
-							CW_USEDEFAULT, CW_USEDEFAULT, window_size.right-window_size.left, window_size.bottom-window_size.top,
-							NULL, NULL,	application, this );
+	window = CreateWindow(L"DirectXApplication", L"CGS Hardware Project", WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME | WS_MAXIMIZEBOX),
+		CW_USEDEFAULT, CW_USEDEFAULT, window_size.right - window_size.left, window_size.bottom - window_size.top,
+		NULL, NULL, application, this);
 
-    ShowWindow( window, SW_SHOW );
+	ShowWindow(window, SW_SHOW);
 #endif
 	//********************* END WARNING ************************//
 
@@ -1020,8 +1025,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//end light initializations
 
 	//Prepass initializations
-	
-    //Creating the Shadow Map texture
+
+	//Creating the Shadow Map texture
 	D3D11_TEXTURE2D_DESC shadowMapDesc;
 	ZeroMemory(&shadowMapDesc, sizeof(shadowMapDesc));
 	shadowMapDesc.Width = BACKBUFFER_WIDTH;
@@ -1042,7 +1047,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	shadowRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	shadowRTVDesc.Texture2D.MipSlice = 0;
 	Device->CreateRenderTargetView(theShadowMap.Get(), &shadowRTVDesc, shadowRTV.GetAddressOf());
-	
+
 	//binding shadow map as a shader resource
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc;
 	shadowSRVDesc.Format = shadowMapDesc.Format;
@@ -1065,8 +1070,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 
-	
-    //create new depth render to texture pixel shader
+
+	//create new depth render to texture pixel shader
 	std::vector<uint8_t> shadowPSData;
 	ShaderLoader::LoadShader(shadowPSData, "DepthMapPS.cso");
 	Device->CreatePixelShader(&shadowPSData[0], shadowPSData.size(), NULL, depthPS.GetAddressOf());
@@ -1075,11 +1080,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	std::vector<uint8_t> nullGSData;
 	ShaderLoader::LoadShader(nullGSData, "VSforNullGS.cso");
 
-	
+
 	D3D11_SO_DECLARATION_ENTRY SODecl[] =
 	{
-		{ 0, "SV_POSITION", 0, 0, 4, 0 },   
-		{ 0, "UVW", 0, 0, 4, 0 },     
+		{ 0, "SV_POSITION", 0, 0, 4, 0 },
+		{ 0, "UVW", 0, 0, 4, 0 },
 		{ 0, "NORM", 0, 0, 4, 0 },
 	};
 	Device->CreateGeometryShaderWithStreamOutput(&nullGSData[0], nullGSData.size(), SODecl, ARRAYSIZE(SODecl), NULL, 0, 0, NULL, nullSOGS.GetAddressOf());
@@ -1122,7 +1127,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(5.0f, 0.0f, 1.0f))));
 		XMStoreFloat4x4(&(animInstances.instances[2]), XMMatrixTranspose(XMMatrixMultiply(XMMatrixScaling(0.02f, 0.02f, 0.02f), XMMatrixTranslation(-5.0f, 0.0f, -1.0f))));
 	}
-	else if(LOADED_BEAR == 0)
+	else if (LOADED_BEAR == 0)
 	{
 		XMStoreFloat4x4(&(animInstances.instances[0]), XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f)));
 		XMStoreFloat4x4(&(animInstances.instances[1]), XMMatrixTranspose(XMMatrixTranslation(5.0f, 0.0f, 1.0f)));
@@ -1195,7 +1200,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		whatever::loadFile("../Resources/Teddy_Skeleton.pws", "../Resources/Teddy_Run.fbx");
 		whatever::loadFile("../Resources/Teddy_RunAnim.pwa", "../Resources/Teddy_Run.fbx");
 	}
-	else if(LOADED_BEAR == 0)
+	else if (LOADED_BEAR == 0)
 	{
 		whatever::loadFile("../Resources/Box_Mesh.pwm", "../Resources/Box_Jump.fbx");
 		whatever::loadFile("../Resources/Box_Skeleton.pws", "../Resources/Box_Jump.fbx");
@@ -1239,7 +1244,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	TangentSkinnedVert* SkinnedVertexBuffer = new TangentSkinnedVert[numVerts];
 	float* Tangents = whatever::GetTangents();
 #endif
-	for(int i = 0; i < numVerts; i++)
+	for (int i = 0; i < numVerts; i++)
 	{
 #if LOADED_BEAR != 2
 		SkinnedVert Temp;
@@ -1255,14 +1260,22 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		SkinnedVertexBuffer[i] = Temp;
 	}
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+#if SHADOWS == 1 && LOADED_BEAR != 2
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedShadowContext, CleanupPlaneContext, false);
+#else
+	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
+#endif
 #if LOADED_BEAR == 2
 	ModelMesh = new RenderMesh(CleanupTexturedNormSpecShape);
 #else
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 #endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
+#if SHADOWS == 1 && LOADED_BEAR != 2
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShadowShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
+#else
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
+#endif
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -1286,7 +1299,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #if LOADED_BEAR != 2
 	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(SkinnedVert) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 #else
-	constBuffDesc = CD3D11_BUFFER_DESC(sizeof(TangentSkinnedVert) * numVerts, D3D11_BIND_VERTEX_BUFFER);
+		constBuffDesc = CD3D11_BUFFER_DESC(sizeof(TangentSkinnedVert) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 #endif
 	//constBuffDesc = CD3D11_BUFFER_DESC(sizeof(VertexPositionUVWNorm) * numVerts, D3D11_BIND_VERTEX_BUFFER);
 	auto Buffer10 = new Microsoft::WRL::ComPtr<ID3D11Buffer>();
