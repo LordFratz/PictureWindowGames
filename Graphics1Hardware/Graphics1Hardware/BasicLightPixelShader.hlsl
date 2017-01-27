@@ -64,6 +64,6 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	}
 	
 	
-	return baseColor;
-	//return saturate(lightResult * baseColor);
+	//return baseColor;
+	return saturate(lightResult * baseColor);
 }
