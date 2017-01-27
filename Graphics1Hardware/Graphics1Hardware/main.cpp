@@ -1275,14 +1275,22 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		SkinnedVertexBuffer[i] = Temp;
 	}
 	//ModelContext = new RenderContext(devResources, PlaneContext, CleanupPlaneContext, false);
+#if LOADED_BEAR != 2 && SHADOWS == 1
 	ModelContext = new RenderContext(devResources, ModelGeoInstancedShadowContext, CleanupPlaneContext, false);
+#else
+	ModelContext = new RenderContext(devResources, ModelGeoInstancedContext, CleanupPlaneContext, false);
+#endif
 #if LOADED_BEAR == 2
 	ModelMesh = new RenderMesh(CleanupTexturedNormSpecShape);
 #else
 	ModelMesh = new RenderMesh(CleanupTexturedShape);
 #endif
 	ModelMesh->m_indexCount = whatever::GetIndCount();
+#if LOADED_BEAR != 2 && SHADOWS == 1
 	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShadowShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
+#else
+	ModelShape = new RenderShape(devResources, *ModelMesh, *ModelContext, mat, sphere(), SkinnedGeoInstancedShape, CleanProperBlendedSkinnedUpdate, ProperBlendedSkinnedUpdate);
+#endif
 
 	ModelMesh->m_indexCount = numIndices;
 
@@ -1773,9 +1781,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Device->CreateRasterizerState(&rasterStateDescriptor, rasterState.GetAddressOf());
 
 	ModelContext->AddChild(ModelShape);
-	//ModelContext->AddChild(planeContext);
-	//ModelContext->AddChild(planeShape);
-	//ModelContext->AddChild(SphereShapething);
+	ModelContext->AddChild(planeContext);
+	ModelContext->AddChild(planeShape);
+	ModelContext->AddChild(SphereShapething);
 
 	//planeContext->AddChild(planeShape);
 	//planeContext->AddChild(ModelContext);

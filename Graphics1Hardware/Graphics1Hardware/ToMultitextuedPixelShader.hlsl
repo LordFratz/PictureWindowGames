@@ -41,37 +41,6 @@ struct PixelShaderInput
 
 PixelShaderInput main(VertexShaderInput input)
 {
-	/*PixelShaderInput output;
-	float4 skinnedPos = float4(0.0f, 0.0f, 0.0f, 1.0);
-	input.pos.w = 1.0f;
-
-	skinnedPos += input.boneWeights[0] * mul(input.pos, boneOffsets[input.boneIndices[0]]);
-	skinnedPos += input.boneWeights[1] * mul(input.pos, boneOffsets[input.boneIndices[1]]);
-	skinnedPos += input.boneWeights[2] * mul(input.pos, boneOffsets[input.boneIndices[2]]);
-	skinnedPos += input.boneWeights[3] * mul(input.pos, boneOffsets[input.boneIndices[3]]);
-	skinnedPos.w = 1.0f;
-
-	float4 pos = output.surfacePos = mul(skinnedPos, worldMatrix);
-	pos = mul(pos, view);
-	pos = mul(pos, projection);
-	output.pos = pos;
-
-	pos = input.norm;
-	pos.w = 1.0f;
-	pos = mul(pos, worldMatrix);
-	output.norm = pos;
-
-	pos.x = cameraPosition.x;
-	pos.y = cameraPosition.y;
-	pos.z = cameraPosition.z;
-	output.cameraPos = pos;
-
-	output.uvw = input.uvw;
-
-	return output;*/
-
-	//temp test section pass through shader skinning only
-
 	PixelShaderInput output = (PixelShaderInput)0;
 	float4 skinnedPos = float4(0.0f, 0.0f, 0.0f, 1.0);
 	input.pos.w = 1.0f;

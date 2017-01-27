@@ -7,6 +7,8 @@ Controls
     Movement WASD, X -> up, C -> down, right click and drag to look around
 	Animation: (When in manual mode) O -> cycle forward, P -> cycle backward, I -> switch to animated mode
 			   (When in animated mode) O/P -> switch to manual mode
+
+(EXPERT TIP!) compile models first in release mode to make initial fbx loading faster (bear and mage can take upwards of 10 minutes without this)
 			   
 To render bear instead of box:
 	Compile with LOADED_BEAR as 1 for bear, 0 for box (line 35 in main.cpp)
@@ -19,7 +21,8 @@ To switch between Animations
 	NOTE: Once it's blending between animations it will not 
 	accept another call to change animations until it is finished
 
-
+To Switch Shadows on and off:
+	Compile with SHADOWS as 0 for off, 1 for on (line 40 in main.cpp)
 
 Shadow Mapping is mostly complete, but with some bugs or lackings:
 -Map is only storing 8 bit unsigned ints instead of intended floats (causing depth check issues in the shadow shader, as only 1 or -1 seem to be found in the texture)
