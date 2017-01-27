@@ -32,12 +32,12 @@ using namespace DirectX;
 #define BACKBUFFER_HEIGHT	600
 
 //define 1 for bear, 0 for box, 2 for Mage
-#define LOADED_BEAR 2
+#define LOADED_BEAR 0
 
 
 //You shouldn't need to touch this at all to do testing
 //define 0 for no shadows, 1 for shadows
-#define SHADOWS 0
+#define SHADOWS 1
 
 struct ViewProj
 {
