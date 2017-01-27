@@ -25,7 +25,7 @@ struct PixelShaderInput
 	float4 surfacePos : SURPOS;
 	float4 cameraPos : CAMPOS;
 	float4 depthPos : TEXTURE0;
-	float4 lightViewPosition : TEXCOORD1;
+	float4 lightViewPosition : TEXTURE1;
 };
 
 PixelShaderInput main(VertexShaderInput input)
